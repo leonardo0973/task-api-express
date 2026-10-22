@@ -1,0 +1,21 @@
+# Dependencias y compilación
+node_modules/
+dist/
+
+# Variables de entorno (contienen secretos)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+pnpm-debug.log*
+
+# Este proyecto usa PNPM; el lock de npm no se publica
+package-lock.json
+
+# Sistema
+.DS_Store
+Thumbs.db
+.vscode/
+preparar-entrega.ps1
