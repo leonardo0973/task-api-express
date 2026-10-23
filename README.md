@@ -1,6 +1,6 @@
 # Task API Express
 
-API REST de gestión de tareas construida con **Express 5**, **TypeScript**, **PNPM** y **Mongoose 8**, conectada de forma segura con **MongoDB Atlas**. En esta versión (**EC2 F2 A6**), el almacenamiento de tareas se migró por completo a MongoDB Atlas mediante el modelo persistente `TaskModel` con identificadores `ObjectId`, marcas de tiempo automáticas (`timestamps`) y el campo opcional `description`.
+API REST de gestión de tareas construida con **Express 5**, **TypeScript**, **PNPM** y **Mongoose 8**, conectada de forma segura con **MongoDB Atlas**. En esta versión (**EC2 F2 A7**) el módulo de tareas cubre el CRUD completo sobre MongoDB Atlas mediante `TaskModel` (identificadores `ObjectId` y `timestamps`), con una actualización parcial general `PATCH /api/tasks/:id` que modifica `title`, `status` y `priority` sin sobrescribir los campos que no se envían.
 
 ## Requisitos
 
@@ -72,9 +72,23 @@ no abre el puerto y termina con código 1 mostrando un mensaje seguro.
 |---|---|---|---|
 | GET | `/api/tasks` | 200 | Lista todas las tareas ordenadas por fecha de creación. |
 | GET | `/api/tasks/:id` | 200 | Consulta una tarea por su ObjectId (24 caracteres hex). |
-| POST | `/api/tasks` | 201 | Crea una nueva tarea (`title` obligatorio, `description` opcional). |
-| PATCH | `/api/tasks/:id/complete` | 200 | Marca la tarea como `completed` y actualiza `updatedAt`. |
+| POST | `/api/tasks` | 201 | Crea una tarea (`title` obligatorio, `priority` opcional; `status` inicia en `pending`). |
+| PATCH | `/api/tasks/:id` | 200 | Actualización parcial de `title`, `status` y/o `priority` con `$set`, `new: true` y `runValidators: true`. |
+| PATCH | `/api/tasks/:id/complete` | 200 | Ruta heredada: marca `completed` delegando en `updateTask`. |
 | DELETE | `/api/tasks/:id` | 204 | Elimina el documento de la colección `tasks`. |
+
+### Actualización parcial
+
+```http
+PATCH /api/tasks/<OBJECT_ID>
+Content-Type: application/json
+
+{ "title": "Documentar las pruebas CRUD", "status": "completed" }
+```
+
+Campos permitidos: `title` (texto de 1 a 120 caracteres), `status` (`pending` | `completed`) y
+`priority` (`low` | `medium` | `high`, predeterminado `medium`). Se rechazan con 422 el cuerpo
+vacío, los arreglos y cualquier otro campo (`_id`, `id`, `createdAt`, `updatedAt`, `owner`...).
 
 ### Contrato de errores
 
@@ -92,8 +106,8 @@ no abre el puerto y termina con código 1 mostrando un mensaje seguro.
 |---|---|---|
 | 400 | `INVALID_ID`, `INVALID_JSON` | Identificador no conforme a ObjectId o sintaxis JSON rota. |
 | 404 | `TASK_NOT_FOUND`, `ROUTE_NOT_FOUND` | ObjectId válido inexistente o ruta desconocida. |
-| 415 | `UNSUPPORTED_MEDIA_TYPE` | Solicitud POST sin `Content-Type: application/json`. |
-| 422 | `VALIDATION_ERROR`, `PERSISTENCE_VALIDATION_ERROR` | Longitud inválida en título o descripción. |
+| 415 | `UNSUPPORTED_MEDIA_TYPE` | POST o PATCH `/:id` sin `Content-Type: application/json`. |
+| 422 | `VALIDATION_ERROR`, `PERSISTENCE_VALIDATION_ERROR` | Cuerpo vacío o no objeto, campo no permitido, título vacío o mayor de 120, `status` o `priority` fuera del enum. |
 | 500 | `INTERNAL_ERROR` | Error imprevisto. |
 | 503 | `DATABASE_UNAVAILABLE`, `SERVICE_UNAVAILABLE` | Falla de conexión a Atlas o cierre en curso. |
 
@@ -125,14 +139,19 @@ src/
 ├── config/database.ts          # Conexión Mongoose a MongoDB Atlas
 ├── services/database.service.ts# Ping a Atlas para /health/database
 ├── services/task.service.ts    # Operaciones asíncronas con TaskModel
-├── models/task.ts              # Esquema Mongoose, modelo y tipos (con description)
+├── models/task.ts              # Esquema, TaskModel y tipos Task y TaskUpdate (title, status, priority)
 ├── controllers/                # health y task (funciones asíncronas)
 ├── routes/                     # health.routes y task.routes
-├── middlewares/                # requestId, JSON, validaciones de id y title, errores
+├── middlewares/                # requestId, JSON, validación de id, title y actualización parcial, errores
 ├── errors/                     # AppError y describeDatabaseError
 └── lifecycle/graceful-shutdown.ts
 docs/
-├── pruebas-persistencia-mongodb.md
-└── reflexion-modelado-mongodb.md
-postman/Task API EC2 F2 A6.postman_collection.json
+├── pruebas-conexion-mongodb.md      # EC2 F1 A5
+├── pruebas-persistencia-mongodb.md  # EC2 F2 A6
+├── pruebas-crud-mongodb.md          # EC2 F2 A7
+└── reflexion-*.md
+postman/
+├── Task API EC2 F1 A5.postman_collection.json
+├── Task API EC2 F2 A6.postman_collection.json
+└── Task API EC2 F2 A7.postman_collection.json
 ```

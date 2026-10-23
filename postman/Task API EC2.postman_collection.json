@@ -1,0 +1,1749 @@
+{
+  "info": {
+    "name": "Task API EC2",
+    "description": "Pruebas de task-api-express para EC2 F1 A5 (conexión segura con MongoDB Atlas), EC2 F2 A6 (modelado y persistencia) y EC2 F2 A7 (CRUD persistente completo).\n\nEjecuta las carpetas A5, A6 y A7 con el Runner, con la API encendida. La carpeta Manual se ejecuta solicitud por solicitud siguiendo su descripción.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "taskId",
+      "value": ""
+    },
+    {
+      "key": "priorityTaskId",
+      "value": ""
+    },
+    {
+      "key": "highTaskId",
+      "value": ""
+    },
+    {
+      "key": "restartTaskId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "EC2 F1 A5 Conexión Atlas",
+      "description": "Rutas de salud, ping a Atlas y contrato de errores conservado.",
+      "item": [
+        {
+          "name": "GET /health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('status ok', () => pm.expect(pm.response.json().status).to.eql('ok'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "GET /health/database (ping a Atlas)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('ping ok', () => pm.expect(pm.response.json().data.ping).to.eql('ok'));",
+                  "pm.test('base task_api', () => pm.expect(pm.response.json().data.database).to.eql('task_api'));",
+                  "pm.test('No expone host ni URI', () => { const t = pm.response.text(); ['mongodb+srv','mongodb.net','@'].forEach(s => pm.expect(t).to.not.include(s)); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/database",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health",
+                "database"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "GET /ruta-inexistente (contrato EC1 conservado)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Código ROUTE_NOT_FOUND', () => pm.expect(pm.response.json().error.code).to.eql('ROUTE_NOT_FOUND'));",
+                  "pm.test('requestId coincide con X-Request-Id', () => pm.expect(pm.response.json().error.requestId).to.eql(pm.response.headers.get('X-Request-Id')));",
+                  "pm.test('No expone información interna', () => { const t = pm.response.text(); ['mongodb+srv','mongodb.net','stack','Mongoose','_id'].forEach(s => pm.expect(t).to.not.include(s)); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ruta-inexistente",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ruta-inexistente"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "POST JSON mal formado (contrato EC1 conservado)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Código INVALID_JSON', () => pm.expect(pm.response.json().error.code).to.eql('INVALID_JSON'));",
+                  "pm.test('requestId coincide con X-Request-Id', () => pm.expect(pm.response.json().error.requestId).to.eql(pm.response.headers.get('X-Request-Id')));",
+                  "pm.test('No expone información interna', () => { const t = pm.response.text(); ['mongodb+srv','mongodb.net','stack','Mongoose','_id'].forEach(s => pm.expect(t).to.not.include(s)); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "EC2 F2 A6 Persistencia",
+      "description": "Modelo Mongoose, ObjectId y ciclo heredado sobre Atlas: 201, 200, 200, 200, 204, 404.",
+      "item": [
+        {
+          "name": "POST /api/tasks (crear documento en Atlas)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "if (pm.response.code === 201) { pm.collectionVariables.set('taskId', pm.response.json().data.id); }",
+                  "pm.test('id es un ObjectId (24 hex)', () => pm.expect(pm.response.json().data.id).to.match(/^[0-9a-f]{24}$/));",
+                  "pm.test('Respuesta pública sin _id ni __v', () => { const d = pm.response.json().data; pm.expect(d).to.have.property('id'); pm.expect(d).to.not.have.property('_id'); pm.expect(d).to.not.have.property('__v'); });",
+                  "pm.test('status = pending', () => pm.expect(pm.response.json().data.status).to.eql('pending'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Tarea persistente A6\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/tasks (lista desde Atlas)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('data es arreglo y contiene la tarea', () => { const ids = pm.response.json().data.map(t => t.id); pm.expect(ids).to.include(pm.collectionVariables.get('taskId')); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "GET /api/tasks/{{taskId}}",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Respuesta pública sin _id ni __v', () => { const d = pm.response.json().data; pm.expect(d).to.have.property('id'); pm.expect(d).to.not.have.property('_id'); pm.expect(d).to.not.have.property('__v'); });",
+                  "pm.test('mismo id', () => pm.expect(pm.response.json().data.id).to.eql(pm.collectionVariables.get('taskId')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "PATCH /api/tasks/{{taskId}}/complete",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('status = completed', () => pm.expect(pm.response.json().data.status).to.eql('completed'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}/complete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}",
+                "complete"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "GET /api/tasks/{{taskId}} (consultar de nuevo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('status = completed', () => pm.expect(pm.response.json().data.status).to.eql('completed'));",
+                  "pm.test('updatedAt posterior a createdAt', () => { const d = pm.response.json().data; pm.expect(new Date(d.updatedAt) >= new Date(d.createdAt)).to.be.true; });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "DELETE /api/tasks/{{taskId}}",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 204', () => pm.response.to.have.status(204));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Cuerpo vacío', () => pm.expect(pm.response.text()).to.eql(''));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "GET /api/tasks/{{taskId}} (ya no existe)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Código TASK_NOT_FOUND', () => pm.expect(pm.response.json().error.code).to.eql('TASK_NOT_FOUND'));",
+                  "pm.test('requestId coincide con X-Request-Id', () => pm.expect(pm.response.json().error.requestId).to.eql(pm.response.headers.get('X-Request-Id')));",
+                  "pm.test('No expone información interna', () => { const t = pm.response.text(); ['mongodb+srv','mongodb.net','stack','Mongoose','_id'].forEach(s => pm.expect(t).to.not.include(s)); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "GET /api/tasks/1 (INVALID_ID)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Código INVALID_ID', () => pm.expect(pm.response.json().error.code).to.eql('INVALID_ID'));",
+                  "pm.test('requestId coincide con X-Request-Id', () => pm.expect(pm.response.json().error.requestId).to.eql(pm.response.headers.get('X-Request-Id')));",
+                  "pm.test('No expone información interna', () => { const t = pm.response.text(); ['mongodb+srv','mongodb.net','stack','Mongoose','_id'].forEach(s => pm.expect(t).to.not.include(s)); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "1"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "GET ObjectId inexistente (TASK_NOT_FOUND)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Código TASK_NOT_FOUND', () => pm.expect(pm.response.json().error.code).to.eql('TASK_NOT_FOUND'));",
+                  "pm.test('requestId coincide con X-Request-Id', () => pm.expect(pm.response.json().error.requestId).to.eql(pm.response.headers.get('X-Request-Id')));",
+                  "pm.test('No expone información interna', () => { const t = pm.response.text(); ['mongodb+srv','mongodb.net','stack','Mongoose','_id'].forEach(s => pm.expect(t).to.not.include(s)); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/507f1f77bcf86cd799439011",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "507f1f77bcf86cd799439011"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "POST title vacío (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 422', () => pm.response.to.have.status(422));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Código VALIDATION_ERROR', () => pm.expect(pm.response.json().error.code).to.eql('VALIDATION_ERROR'));",
+                  "pm.test('requestId coincide con X-Request-Id', () => pm.expect(pm.response.json().error.requestId).to.eql(pm.response.headers.get('X-Request-Id')));",
+                  "pm.test('No expone información interna', () => { const t = pm.response.text(); ['mongodb+srv','mongodb.net','stack','Mongoose','_id'].forEach(s => pm.expect(t).to.not.include(s)); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST title de 121 caracteres (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 422', () => pm.response.to.have.status(422));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Código VALIDATION_ERROR', () => pm.expect(pm.response.json().error.code).to.eql('VALIDATION_ERROR'));",
+                  "pm.test('requestId coincide con X-Request-Id', () => pm.expect(pm.response.json().error.requestId).to.eql(pm.response.headers.get('X-Request-Id')));",
+                  "pm.test('No expone información interna', () => { const t = pm.response.text(); ['mongodb+srv','mongodb.net','stack','Mongoose','_id'].forEach(s => pm.expect(t).to.not.include(s)); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST sin application/json (415)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 415', () => pm.response.to.have.status(415));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Código UNSUPPORTED_MEDIA_TYPE', () => pm.expect(pm.response.json().error.code).to.eql('UNSUPPORTED_MEDIA_TYPE'));",
+                  "pm.test('requestId coincide con X-Request-Id', () => pm.expect(pm.response.json().error.requestId).to.eql(pm.response.headers.get('X-Request-Id')));",
+                  "pm.test('No expone información interna', () => { const t = pm.response.text(); ['mongodb+srv','mongodb.net','stack','Mongoose','_id'].forEach(s => pm.expect(t).to.not.include(s)); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"Texto\"}",
+              "options": {
+                "raw": {
+                  "language": "text"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "EC2 F2 A7 CRUD",
+      "description": "Actualización parcial PATCH /:id, ruta heredada /complete, casos negativos y desafío priority.",
+      "item": [
+        {
+          "name": "POST /api/tasks (crear tarea de trabajo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "if (pm.response.code === 201) { pm.collectionVariables.set('taskId', pm.response.json().data.id); }",
+                  "pm.test('id es un ObjectId (24 hex)', () => pm.expect(pm.response.json().data.id).to.match(/^[0-9a-f]{24}$/));",
+                  "pm.test('status = pending', () => pm.expect(pm.response.json().data.status).to.eql('pending'));",
+                  "pm.test('priority = medium', () => pm.expect(pm.response.json().data.priority).to.eql('medium'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Preparar evidencia del CRUD\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/tasks",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "GET /api/tasks/{{taskId}}",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "PATCH solo title (conserva status)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('title = Documentar el CRUD persistente', () => pm.expect(pm.response.json().data.title).to.eql('Documentar el CRUD persistente'));",
+                  "pm.test('status = pending', () => pm.expect(pm.response.json().data.status).to.eql('pending'));",
+                  "pm.test('mismo id', () => pm.expect(pm.response.json().data.id).to.eql(pm.collectionVariables.get('taskId')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Documentar el CRUD persistente\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH solo status (conserva title)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('status = completed', () => pm.expect(pm.response.json().data.status).to.eql('completed'));",
+                  "pm.test('title = Documentar el CRUD persistente', () => pm.expect(pm.response.json().data.title).to.eql('Documentar el CRUD persistente'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completed\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH title y status (updatedAt cambia)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('title = Revisar evidencias', () => pm.expect(pm.response.json().data.title).to.eql('Revisar evidencias'));",
+                  "pm.test('status = pending', () => pm.expect(pm.response.json().data.status).to.eql('pending'));",
+                  "pm.test('updatedAt > createdAt', () => { const d = pm.response.json().data; pm.expect(new Date(d.updatedAt) > new Date(d.createdAt)).to.be.true; });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Revisar evidencias\",\n  \"status\": \"pending\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH /complete sin cuerpo (ruta heredada)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('status = completed', () => pm.expect(pm.response.json().data.status).to.eql('completed'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}/complete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}",
+                "complete"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "PATCH /api/tasks/1 (INVALID_ID)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Código INVALID_ID', () => pm.expect(pm.response.json().error.code).to.eql('INVALID_ID'));",
+                  "pm.test('requestId coincide con X-Request-Id', () => pm.expect(pm.response.json().error.requestId).to.eql(pm.response.headers.get('X-Request-Id')));",
+                  "pm.test('No expone información interna', () => { const t = pm.response.text(); ['mongodb+srv','mongodb.net','stack','Mongoose','_id'].forEach(s => pm.expect(t).to.not.include(s)); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "1"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Nuevo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH ObjectId inexistente (TASK_NOT_FOUND)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Código TASK_NOT_FOUND', () => pm.expect(pm.response.json().error.code).to.eql('TASK_NOT_FOUND'));",
+                  "pm.test('requestId coincide con X-Request-Id', () => pm.expect(pm.response.json().error.requestId).to.eql(pm.response.headers.get('X-Request-Id')));",
+                  "pm.test('No expone información interna', () => { const t = pm.response.text(); ['mongodb+srv','mongodb.net','stack','Mongoose','_id'].forEach(s => pm.expect(t).to.not.include(s)); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/507f1f77bcf86cd799439011",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "507f1f77bcf86cd799439011"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Nuevo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH sin application/json (415)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 415', () => pm.response.to.have.status(415));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Código UNSUPPORTED_MEDIA_TYPE', () => pm.expect(pm.response.json().error.code).to.eql('UNSUPPORTED_MEDIA_TYPE'));",
+                  "pm.test('requestId coincide con X-Request-Id', () => pm.expect(pm.response.json().error.requestId).to.eql(pm.response.headers.get('X-Request-Id')));",
+                  "pm.test('No expone información interna', () => { const t = pm.response.text(); ['mongodb+srv','mongodb.net','stack','Mongoose','_id'].forEach(s => pm.expect(t).to.not.include(s)); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"Nuevo\"}",
+              "options": {
+                "raw": {
+                  "language": "text"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH JSON mal formado (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Código INVALID_JSON', () => pm.expect(pm.response.json().error.code).to.eql('INVALID_JSON'));",
+                  "pm.test('requestId coincide con X-Request-Id', () => pm.expect(pm.response.json().error.requestId).to.eql(pm.response.headers.get('X-Request-Id')));",
+                  "pm.test('No expone información interna', () => { const t = pm.response.text(); ['mongodb+srv','mongodb.net','stack','Mongoose','_id'].forEach(s => pm.expect(t).to.not.include(s)); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": ",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH {} cuerpo vacío (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 422', () => pm.response.to.have.status(422));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Código VALIDATION_ERROR', () => pm.expect(pm.response.json().error.code).to.eql('VALIDATION_ERROR'));",
+                  "pm.test('requestId coincide con X-Request-Id', () => pm.expect(pm.response.json().error.requestId).to.eql(pm.response.headers.get('X-Request-Id')));",
+                  "pm.test('No expone información interna', () => { const t = pm.response.text(); ['mongodb+srv','mongodb.net','stack','Mongoose','_id'].forEach(s => pm.expect(t).to.not.include(s)); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH title con espacios (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 422', () => pm.response.to.have.status(422));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Código VALIDATION_ERROR', () => pm.expect(pm.response.json().error.code).to.eql('VALIDATION_ERROR'));",
+                  "pm.test('requestId coincide con X-Request-Id', () => pm.expect(pm.response.json().error.requestId).to.eql(pm.response.headers.get('X-Request-Id')));",
+                  "pm.test('No expone información interna', () => { const t = pm.response.text(); ['mongodb+srv','mongodb.net','stack','Mongoose','_id'].forEach(s => pm.expect(t).to.not.include(s)); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"   \"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH status archived (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 422', () => pm.response.to.have.status(422));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Código VALIDATION_ERROR', () => pm.expect(pm.response.json().error.code).to.eql('VALIDATION_ERROR'));",
+                  "pm.test('requestId coincide con X-Request-Id', () => pm.expect(pm.response.json().error.requestId).to.eql(pm.response.headers.get('X-Request-Id')));",
+                  "pm.test('No expone información interna', () => { const t = pm.response.text(); ['mongodb+srv','mongodb.net','stack','Mongoose','_id'].forEach(s => pm.expect(t).to.not.include(s)); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"archived\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH owner no permitido (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 422', () => pm.response.to.have.status(422));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Código VALIDATION_ERROR', () => pm.expect(pm.response.json().error.code).to.eql('VALIDATION_ERROR'));",
+                  "pm.test('requestId coincide con X-Request-Id', () => pm.expect(pm.response.json().error.requestId).to.eql(pm.response.headers.get('X-Request-Id')));",
+                  "pm.test('No expone información interna', () => { const t = pm.response.text(); ['mongodb+srv','mongodb.net','stack','Mongoose','_id'].forEach(s => pm.expect(t).to.not.include(s)); });",
+                  "pm.test('details identifica owner', () => pm.expect(pm.response.json().error.details[0].field).to.eql('owner'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"owner\": \"Ana\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Desafío: POST sin priority (medium)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "if (pm.response.code === 201) { pm.collectionVariables.set('priorityTaskId', pm.response.json().data.id); }",
+                  "pm.test('id es un ObjectId (24 hex)', () => pm.expect(pm.response.json().data.id).to.match(/^[0-9a-f]{24}$/));",
+                  "pm.test('priority = medium', () => pm.expect(pm.response.json().data.priority).to.eql('medium'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Tarea prioridad default\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Desafío: POST priority high",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('priority = high', () => pm.expect(pm.response.json().data.priority).to.eql('high'));",
+                  "if (pm.response.code === 201) { pm.collectionVariables.set('highTaskId', pm.response.json().data.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Tarea prioridad alta\",\n  \"priority\": \"high\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Desafío: PATCH priority low",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('priority = low', () => pm.expect(pm.response.json().data.priority).to.eql('low'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{priorityTaskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{priorityTaskId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"priority\": \"low\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Desafío: PATCH priority urgent (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 422', () => pm.response.to.have.status(422));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Código VALIDATION_ERROR', () => pm.expect(pm.response.json().error.code).to.eql('VALIDATION_ERROR'));",
+                  "pm.test('requestId coincide con X-Request-Id', () => pm.expect(pm.response.json().error.requestId).to.eql(pm.response.headers.get('X-Request-Id')));",
+                  "pm.test('No expone información interna', () => { const t = pm.response.text(); ['mongodb+srv','mongodb.net','stack','Mongoose','_id'].forEach(s => pm.expect(t).to.not.include(s)); });",
+                  "pm.test('details identifica priority', () => pm.expect(pm.response.json().error.details[0].field).to.eql('priority'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{priorityTaskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{priorityTaskId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"priority\": \"urgent\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE /api/tasks/{{taskId}} (204)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 204', () => pm.response.to.have.status(204));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Cuerpo vacío', () => pm.expect(pm.response.text()).to.eql(''));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "GET después de DELETE (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Código TASK_NOT_FOUND', () => pm.expect(pm.response.json().error.code).to.eql('TASK_NOT_FOUND'));",
+                  "pm.test('requestId coincide con X-Request-Id', () => pm.expect(pm.response.json().error.requestId).to.eql(pm.response.headers.get('X-Request-Id')));",
+                  "pm.test('No expone información interna', () => { const t = pm.response.text(); ['mongodb+srv','mongodb.net','stack','Mongoose','_id'].forEach(s => pm.expect(t).to.not.include(s)); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Limpieza: DELETE tarea priority high",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 204', () => pm.response.to.have.status(204));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{highTaskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{highTaskId}}"
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "Manual (no usar en Runner)",
+      "description": "Persistencia después de reiniciar y Atlas no disponible (503).",
+      "item": [
+        {
+          "name": "1. Crear tarea para probar reinicio",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "if (pm.response.code === 201) { pm.collectionVariables.set('restartTaskId', pm.response.json().data.id); }",
+                  "pm.test('id es un ObjectId (24 hex)', () => pm.expect(pm.response.json().data.id).to.match(/^[0-9a-f]{24}$/));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "description": "Envía esta solicitud, detén la API (Ctrl+C), vuelve a iniciarla y envía la siguiente.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Sigo aquí después de reiniciar\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "2. Consultar después de reiniciar la API",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('title = Sigo aquí después de reiniciar', () => pm.expect(pm.response.json().data.title).to.eql('Sigo aquí después de reiniciar'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{restartTaskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{restartTaskId}}"
+              ]
+            },
+            "description": "Demuestra persistencia: la tarea sigue existiendo aunque Node.js se reinició."
+          }
+        },
+        {
+          "name": "3. GET /health/database sin internet (503)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 503', () => pm.response.to.have.status(503));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Código DATABASE_UNAVAILABLE', () => pm.expect(pm.response.json().error.code).to.eql('DATABASE_UNAVAILABLE'));",
+                  "pm.test('requestId coincide con X-Request-Id', () => pm.expect(pm.response.json().error.requestId).to.eql(pm.response.headers.get('X-Request-Id')));",
+                  "pm.test('No expone información interna', () => { const t = pm.response.text(); ['mongodb+srv','mongodb.net','stack','Mongoose','_id'].forEach(s => pm.expect(t).to.not.include(s)); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/database",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health",
+                "database"
+              ]
+            },
+            "description": "Con la API encendida, desactiva el Wi-Fi, espera unos 10 segundos y envía. Vuelve a activar el Wi-Fi al terminar."
+          }
+        },
+        {
+          "name": "4. GET /api/tasks sin internet (503)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado 503', () => pm.response.to.have.status(503));",
+                  "pm.test('Incluye X-Request-Id', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string'));",
+                  "pm.test('Código DATABASE_UNAVAILABLE', () => pm.expect(pm.response.json().error.code).to.eql('DATABASE_UNAVAILABLE'));",
+                  "pm.test('requestId coincide con X-Request-Id', () => pm.expect(pm.response.json().error.requestId).to.eql(pm.response.headers.get('X-Request-Id')));",
+                  "pm.test('No expone información interna', () => { const t = pm.response.text(); ['mongodb+srv','mongodb.net','stack','Mongoose','_id'].forEach(s => pm.expect(t).to.not.include(s)); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "description": "Igual que la anterior, con el Wi-Fi desactivado."
+          }
+        }
+      ]
+    }
+  ]
+}

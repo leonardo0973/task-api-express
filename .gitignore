@@ -19,3 +19,4 @@ package-lock.json
 Thumbs.db
 .vscode/
 preparar-entrega.ps1
+publicar-a7.ps1
