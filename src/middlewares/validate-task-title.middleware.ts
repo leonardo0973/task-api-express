@@ -1,5 +1,9 @@
 import type { NextFunction, Request, Response } from 'express';
 import { AppError } from '../errors/app-error.js';
+import { TASK_PRIORITIES, type TaskPriority } from '../models/task.js';
+
+const isTaskPriority = (value: unknown): value is TaskPriority =>
+  typeof value === 'string' && TASK_PRIORITIES.some((priority) => priority === value);
 
 export const validateTaskTitle = (
   req: Request,
@@ -7,7 +11,7 @@ export const validateTaskTitle = (
   next: NextFunction
 ): void => {
   const title: unknown = req.body?.title;
-  const description: unknown = req.body?.description;
+  const priority: unknown = req.body?.priority;
   const details: Array<{ field: string; message: string }> = [];
 
   if (typeof title !== 'string' || !title.trim()) {
@@ -16,11 +20,9 @@ export const validateTaskTitle = (
     details.push({ field: 'title', message: 'No debe superar 120 caracteres.' });
   }
 
-  if (description !== undefined) {
-    if (typeof description !== 'string') {
-      details.push({ field: 'description', message: 'Debe ser texto.' });
-    } else if (description.trim().length > 300) {
-      details.push({ field: 'description', message: 'No debe superar 300 caracteres.' });
+  if (priority !== undefined) {
+    if (!isTaskPriority(priority)) {
+      details.push({ field: 'priority', message: 'Debe ser low, medium o high.' });
     }
   }
 
@@ -35,6 +37,6 @@ export const validateTaskTitle = (
   }
 
   res.locals.taskTitle = (title as string).trim();
-  res.locals.taskDescription = typeof description === 'string' ? description.trim() : undefined;
+  res.locals.taskPriority = typeof priority === 'string' ? priority : undefined;
   next();
 };

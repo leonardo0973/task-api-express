@@ -3,22 +3,19 @@ import { AppError } from '../errors/app-error.js';
 import {
   TaskModel,
   type Task,
-  type TaskPersistence
+  type TaskPersistence,
+  type TaskPriority,
+  type TaskUpdate
 } from '../models/task.js';
 
-const toTask = (document: HydratedDocument<TaskPersistence>): Task => {
-  const task: Task = {
-    id: document._id.toString(),
-    title: document.title,
-    status: document.status,
-    createdAt: document.createdAt,
-    updatedAt: document.updatedAt
-  };
-  if (document.description) {
-    task.description = document.description;
-  }
-  return task;
-};
+const toTask = (document: HydratedDocument<TaskPersistence>): Task => ({
+  id: document._id.toString(),
+  title: document.title,
+  status: document.status,
+  priority: document.priority,
+  createdAt: document.createdAt,
+  updatedAt: document.updatedAt
+});
 
 const mapPersistenceError = (error: unknown): AppError => {
   if (error instanceof AppError) return error;
@@ -64,12 +61,15 @@ export const findTaskById = async (id: string): Promise<Task> => {
   }
 };
 
-export const createTask = async (title: string, description?: string): Promise<Task> => {
+export const createTask = async (
+  title: string,
+  priority?: TaskPriority
+): Promise<Task> => {
   try {
     const document = await TaskModel.create({
       title,
-      ...(description ? { description } : {}),
-      status: 'pending'
+      status: 'pending',
+      ...(priority ? { priority } : {})
     });
     return toTask(document);
   } catch (error: unknown) {
@@ -77,11 +77,14 @@ export const createTask = async (title: string, description?: string): Promise<T
   }
 };
 
-export const completeTask = async (id: string): Promise<Task> => {
+export const updateTask = async (
+  id: string,
+  changes: TaskUpdate
+): Promise<Task> => {
   try {
     const document = await TaskModel.findByIdAndUpdate(
       id,
-      { status: 'completed' },
+      { $set: changes },
       { new: true, runValidators: true }
     );
     if (!document) {
@@ -92,6 +95,9 @@ export const completeTask = async (id: string): Promise<Task> => {
     throw mapPersistenceError(error);
   }
 };
+
+export const completeTask = async (id: string): Promise<Task> =>
+  updateTask(id, { status: 'completed' });
 
 export const deleteTask = async (id: string): Promise<void> => {
   try {
