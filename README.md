@@ -18,6 +18,10 @@ Copia `.env.example` como `.env` y completa los valores. **`.env` nunca se sube 
 | `PORT` | No (3000) | Puerto HTTP de la API. Entero entre 1 y 65535. |
 | `MONGODB_URI` | Sí | Cadena `mongodb+srv://` del clúster de Atlas con el usuario exclusivo de la API. |
 | `MONGODB_DB_NAME` | Sí | Base de datos de la API: `task_api`. |
+| `JWT_SECRET` | Sí | Clave aleatoria de al menos 32 bytes para firmar los JWT (HS256). |
+| `JWT_EXPIRES_IN` | No (`1h`) | Vigencia del token: número seguido de `s`, `m`, `h` o `d`. |
+| `JWT_ISSUER` | No (`task-api-express`) | Emisor que se firma y se exige al verificar. |
+| `JWT_AUDIENCE` | No (`task-api-client`) | Audiencia que se firma y se exige al verificar. |
 
 La API valida estas variables al arrancar. Si falta alguna o tiene formato incorrecto, se
 detiene con un mensaje descriptivo sin mostrar valores reales.
@@ -70,12 +74,41 @@ no abre el puerto y termina con código 1 mostrando un mensaje seguro.
 
 | Método | Ruta | Éxito | Descripción |
 |---|---|---|---|
-| GET | `/api/tasks` | 200 | Lista todas las tareas ordenadas por fecha de creación. |
+| GET | `/api/tasks` | 200 | Lista paginada con `data` y `meta` (ver *Consultas del listado*). Sin parámetros conserva `createdAt asc`. |
 | GET | `/api/tasks/:id` | 200 | Consulta una tarea por su ObjectId (24 caracteres hex). |
 | POST | `/api/tasks` | 201 | Crea una tarea (`title` obligatorio, `priority` opcional; `status` inicia en `pending`). |
 | PATCH | `/api/tasks/:id` | 200 | Actualización parcial de `title`, `status` y/o `priority` con `$set`, `new: true` y `runValidators: true`. |
 | PATCH | `/api/tasks/:id/complete` | 200 | Ruta heredada: marca `completed` delegando en `updateTask`. |
 | DELETE | `/api/tasks/:id` | 204 | Elimina el documento de la colección `tasks`. |
+
+### Consultas del listado (EC2 F3 A8)
+
+`GET /api/tasks?page=2&limit=5&status=pending&search=api&sortBy=title&order=asc`
+
+| Parámetro | Predeterminado | Regla |
+|---|---|---|
+| `page` | 1 | Entero entre 1 y 100000. |
+| `limit` | 10 | Entero entre 1 y 50. |
+| `status` | sin filtro | `pending` o `completed`. |
+| `search` | sin búsqueda | Texto no vacío de hasta 60 caracteres; búsqueda parcial en `title` sin distinguir mayúsculas (se escapan metacaracteres). |
+| `sortBy` | `createdAt` | `createdAt`, `updatedAt`, `title` o `status`. |
+| `order` | `asc` | `asc` o `desc`. |
+| `createdFrom` / `createdTo` | sin rango | Fechas ISO 8601; `createdFrom` no puede ser posterior a `createdTo` (desafío). |
+
+La respuesta incluye `meta: { page, limit, total, totalPages, hasNextPage, hasPreviousPage }`. Un parámetro
+desconocido, repetido o inválido responde `422 QUERY_VALIDATION_ERROR` con `details` por campo.
+
+### Autenticación (EC3 F1 A9)
+
+| Método | Ruta | Éxito | Descripción |
+|---|---|---|---|
+| POST | `/api/auth/register` | 201 | Recibe `name`, `email`, `password` (15 caracteres a 72 bytes) y `confirmPassword`. Devuelve `data.user` sin contraseña ni hash; el rol siempre es `user`. |
+| POST | `/api/auth/login` | 200 | Recibe `email` y `password`. Devuelve `data.user`, `accessToken`, `tokenType: "Bearer"` y `expiresIn`. |
+
+- Las contraseñas se guardan solo como hash bcrypt (12 rondas, `bcryptjs`); `passwordHash` tiene `select: false`.
+- El JWT (`jose`, HS256) contiene únicamente `sub`, `role`, `iss`, `aud`, `iat` y `exp`.
+- Errores: `409 USER_EMAIL_EXISTS`, `422 AUTH_VALIDATION_ERROR`, `401 INVALID_CREDENTIALS` (mismo mensaje para correo inexistente y contraseña incorrecta), `415`, `400 INVALID_JSON`.
+- En A9 las rutas de tareas siguen públicas; la protección con token llega en A10.
 
 ### Actualización parcial
 
@@ -127,6 +160,8 @@ Al recibir `SIGINT` (Ctrl+C) o `SIGTERM` la API:
 - Usuario de Atlas exclusivo con `readWrite` limitado a `task_api`.
 - Acceso de red restringido a la IP del equipo de desarrollo.
 - La terminal y las respuestas nunca muestran la URI, la contraseña, el host, el stack ni objetos internos de Mongoose.
+- Las contraseñas nunca se guardan ni se responden en texto plano; el cliente no puede enviar `role` ni `passwordHash`.
+- `JWT_SECRET` se genera con `randomBytes(32)` y solo existe en `.env`.
 - Verificación: `git check-ignore .env` debe imprimir `.env` y `git ls-files .env` no debe imprimir nada.
 
 ## Estructura
@@ -138,6 +173,13 @@ src/
 ├── config/env.ts               # Validación de variables de entorno
 ├── config/database.ts          # Conexión Mongoose a MongoDB Atlas
 ├── services/database.service.ts# Ping a Atlas para /health/database
+├── services/task.service.ts    # Reglas de tareas y metadatos de paginación (A8)
+├── services/auth.service.ts    # Registro y login (A9)
+├── services/password.service.ts# Hash y comparación bcrypt (A9)
+├── services/token.service.ts   # Firma y verificación JWT (A9)
+├── repositories/               # task.repository (Mongoose, A8) y user.repository (A9)
+├── models/                     # task y user
+├── types/                      # api-error, task-query (A8) y auth (A9)
 ├── services/task.service.ts    # Operaciones asíncronas con TaskModel
 ├── models/task.ts              # Esquema, TaskModel y tipos Task y TaskUpdate (title, status, priority)
 ├── controllers/                # health y task (funciones asíncronas)
@@ -149,9 +191,14 @@ docs/
 ├── pruebas-conexion-mongodb.md      # EC2 F1 A5
 ├── pruebas-persistencia-mongodb.md  # EC2 F2 A6
 ├── pruebas-crud-mongodb.md          # EC2 F2 A7
+├── pruebas-consultas-tareas.md      # EC2 F3 A8
+├── evidencias-ec3-f1-a9.md          # EC3 F1 A9
+├── capturas/                        # Capturas del Runner de Postman (sin secretos)
 └── reflexion-*.md
 postman/
 ├── Task API EC2 F1 A5.postman_collection.json
 ├── Task API EC2 F2 A6.postman_collection.json
-└── Task API EC2 F2 A7.postman_collection.json
+├── Task API EC2 F2 A7.postman_collection.json
+├── Task API EC2 F3 A8.postman_collection.json
+└── Task API EC3 F1 A9.postman_collection.json
 ```

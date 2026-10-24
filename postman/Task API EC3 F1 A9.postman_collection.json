@@ -1,0 +1,857 @@
+{
+  "info": {
+    "_postman_id": "a78b8908-27e6-409f-bca7-033bb73eadd2",
+    "name": "Task API EC3 F1 A9",
+    "description": "EC3 F1 A9: registro, inicio de sesión, bcrypt y JWT. Ejecuta con el Runner y la API encendida. El token no se guarda en variables: solo se decodifican sus claims para inspección educativa.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "P1 POST /api/auth/register",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const s = Date.now();",
+              "pm.collectionVariables.set('email', `ana.torres.${s}@example.com`);",
+              "pm.collectionVariables.set('emailUpper', `Ana.Torres.${s}@example.com`);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.code === 204 ? null : pm.response.json();",
+              "pm.test('Código 201 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(201));",
+              "pm.test('data.user público con role user', () => { const u = body.data.user; pm.expect(u).to.have.all.keys('id','name','email','role','createdAt','updatedAt'); pm.expect(u.role).to.eql('user'); });",
+              "pm.test('Correo normalizado a minúsculas', () => pm.expect(body.data.user.email).to.eql(pm.collectionVariables.get('email')));",
+              "pm.test('No contiene password ni passwordHash', () => pm.expect(pm.response.text()).to.not.match(/password/i));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Ana Torres\",\n  \"email\": \"{{emailUpper}}\",\n  \"password\": \"Frase segura para clase 2026\",\n  \"confirmPassword\": \"Frase segura para clase 2026\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "P2 POST /api/auth/login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.code === 204 ? null : pm.response.json();",
+              "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+              "pm.test('user, accessToken, tokenType Bearer, expiresIn 1h', () => { pm.expect(body.data).to.have.all.keys('user','accessToken','tokenType','expiresIn'); pm.expect(body.data.tokenType).to.eql('Bearer'); pm.expect(body.data.expiresIn).to.eql('1h'); });",
+              "pm.test('El usuario público no incluye passwordHash', () => pm.expect(pm.response.text()).to.not.include('passwordHash'));",
+              "const claims = JSON.parse(atob(body.data.accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));",
+              "pm.test('Claims (inspección educativa): ' + Object.keys(claims).join(', '), () => { pm.expect(claims.sub).to.eql(body.data.user.id); pm.expect(claims.role).to.eql('user'); pm.expect(claims.iss).to.eql('task-api-express'); pm.expect(claims.aud).to.eql('task-api-client'); pm.expect(claims.exp - claims.iat).to.eql(3600); pm.expect(claims).to.not.have.property('email'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"Frase segura para clase 2026\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "N1 register correo repetido (409)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.code === 204 ? null : pm.response.json();",
+              "pm.test('Código 409 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(409));",
+              "pm.test('USER_EMAIL_EXISTS', () => {",
+              "  pm.expect(body.error.code).to.eql('USER_EMAIL_EXISTS');",
+              "  pm.expect(body.error.requestId).to.be.a('string');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Ana Torres\",\n  \"email\": \"{{email}}\",\n  \"password\": \"Frase segura para clase 2026\",\n  \"confirmPassword\": \"Frase segura para clase 2026\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "N2 register contraseña corta (422)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.code === 204 ? null : pm.response.json();",
+              "pm.test('Código 422 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(422));",
+              "pm.test('AUTH_VALIDATION_ERROR', () => {",
+              "  pm.expect(body.error.code).to.eql('AUTH_VALIDATION_ERROR');",
+              "  pm.expect(body.error.details.map((d) => d.field)).to.include('password');",
+              "  pm.expect(body.error.requestId).to.be.a('string');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Ana Torres\",\n  \"email\": \"corta@example.com\",\n  \"password\": \"corta\",\n  \"confirmPassword\": \"corta\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "N3 register con role admin (422)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.code === 204 ? null : pm.response.json();",
+              "pm.test('Código 422 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(422));",
+              "pm.test('AUTH_VALIDATION_ERROR', () => {",
+              "  pm.expect(body.error.code).to.eql('AUTH_VALIDATION_ERROR');",
+              "  pm.expect(body.error.details.map((d) => d.field)).to.include('role');",
+              "  pm.expect(body.error.requestId).to.be.a('string');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Eva Admin\",\n  \"email\": \"eva.admin@example.com\",\n  \"password\": \"Frase segura para clase 2026\",\n  \"confirmPassword\": \"Frase segura para clase 2026\",\n  \"role\": \"admin\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "N4 login contraseña incorrecta (401)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.code === 204 ? null : pm.response.json();",
+              "pm.test('Código 401 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(401));",
+              "pm.test('INVALID_CREDENTIALS', () => {",
+              "  pm.expect(body.error.code).to.eql('INVALID_CREDENTIALS');",
+              "  pm.expect(body.error.requestId).to.be.a('string');",
+              "});",
+              "pm.collectionVariables.set('n4Message', body.error.message);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"Contraseña equivocada 2026\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "N5 login correo inexistente (401)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.code === 204 ? null : pm.response.json();",
+              "pm.test('Código 401 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(401));",
+              "pm.test('INVALID_CREDENTIALS', () => {",
+              "  pm.expect(body.error.code).to.eql('INVALID_CREDENTIALS');",
+              "  pm.expect(body.error.requestId).to.be.a('string');",
+              "});",
+              "pm.test('Mismo mensaje que N4', () => pm.expect(body.error.message).to.eql(pm.collectionVariables.get('n4Message')));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"no.existe@example.com\",\n  \"password\": \"Frase segura para clase 2026\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "N6 login Content-Type text/plain (415)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.code === 204 ? null : pm.response.json();",
+              "pm.test('Código 415 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(415));",
+              "pm.test('UNSUPPORTED_MEDIA_TYPE', () => {",
+              "  pm.expect(body.error.code).to.eql('UNSUPPORTED_MEDIA_TYPE');",
+              "  pm.expect(body.error.requestId).to.be.a('string');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "text/plain"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "email=ana@example.com"
+        }
+      }
+    },
+    {
+      "name": "N7 login JSON incompleto (400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.code === 204 ? null : pm.response.json();",
+              "pm.test('Código 400 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(400));",
+              "pm.test('INVALID_JSON', () => {",
+              "  pm.expect(body.error.code).to.eql('INVALID_JSON');",
+              "  pm.expect(body.error.requestId).to.be.a('string');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"ana@example.com\",",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "N8 register contraseña > 72 bytes (422)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.code === 204 ? null : pm.response.json();",
+              "pm.test('Código 422 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(422));",
+              "pm.test('AUTH_VALIDATION_ERROR', () => {",
+              "  pm.expect(body.error.code).to.eql('AUTH_VALIDATION_ERROR');",
+              "  pm.expect(body.error.details.map((d) => d.field)).to.include('password');",
+              "  pm.expect(body.error.requestId).to.be.a('string');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Ana\",\n  \"email\": \"largo@example.com\",\n  \"password\": \"ññññññññññññññññññññññññññññññññññññññññ\",\n  \"confirmPassword\": \"ññññññññññññññññññññññññññññññññññññññññ\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "N9 register correo inválido (422)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.code === 204 ? null : pm.response.json();",
+              "pm.test('Código 422 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(422));",
+              "pm.test('AUTH_VALIDATION_ERROR', () => {",
+              "  pm.expect(body.error.code).to.eql('AUTH_VALIDATION_ERROR');",
+              "  pm.expect(body.error.details.map((d) => d.field)).to.include('email');",
+              "  pm.expect(body.error.requestId).to.be.a('string');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Ana\",\n  \"email\": \"no-es-correo\",\n  \"password\": \"Frase segura para clase 2026\",\n  \"confirmPassword\": \"Frase segura para clase 2026\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Desafío: confirmPassword distinto (422)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.code === 204 ? null : pm.response.json();",
+              "pm.test('Código 422 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(422));",
+              "pm.test('AUTH_VALIDATION_ERROR', () => {",
+              "  pm.expect(body.error.code).to.eql('AUTH_VALIDATION_ERROR');",
+              "  pm.expect(body.error.details.map((d) => d.field)).to.include('confirmPassword');",
+              "  pm.expect(body.error.requestId).to.be.a('string');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Ana\",\n  \"email\": \"confirm@example.com\",\n  \"password\": \"Frase segura para clase 2026\",\n  \"confirmPassword\": \"Frase segura para clase 2026!\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "R1 GET /api/tasks?page=1&limit=5 sin token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.code === 204 ? null : pm.response.json();",
+              "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+              "pm.test('A9 conserva ruta pública', () => pm.expect(body.meta.limit).to.eql(5));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/tasks?page=1&limit=5",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "tasks"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "5"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2 POST /api/tasks",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.code === 204 ? null : pm.response.json();",
+              "pm.test('Código 201 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set('taskId', body.data.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/tasks",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "tasks"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Probar A9\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "R3 PATCH /api/tasks/{{taskId}}",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.code === 204 ? null : pm.response.json();",
+              "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "tasks",
+            "{{taskId}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Probar A9 actualizada\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "R4 PATCH /api/tasks/{{taskId}}/complete",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.code === 204 ? null : pm.response.json();",
+              "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/tasks/{{taskId}}/complete",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "tasks",
+            "{{taskId}}",
+            "complete"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R5 GET status=completed&search=A9&sortBy=title&order=asc",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.code === 204 ? null : pm.response.json();",
+              "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+              "pm.test('Filtra, busca y ordena', () => body.data.forEach((t) => pm.expect(t.status).to.eql('completed')));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/tasks?status=completed&search=A9&sortBy=title&order=asc",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "tasks"
+          ],
+          "query": [
+            {
+              "key": "status",
+              "value": "completed"
+            },
+            {
+              "key": "search",
+              "value": "A9"
+            },
+            {
+              "key": "sortBy",
+              "value": "title"
+            },
+            {
+              "key": "order",
+              "value": "asc"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "R6 DELETE /api/tasks/{{taskId}}",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.code === 204 ? null : pm.response.json();",
+              "pm.test('Código 204 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "tasks",
+            "{{taskId}}"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "email",
+      "value": ""
+    },
+    {
+      "key": "emailUpper",
+      "value": ""
+    },
+    {
+      "key": "n4Message",
+      "value": ""
+    },
+    {
+      "key": "taskId",
+      "value": ""
+    }
+  ]
+}
