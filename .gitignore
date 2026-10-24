@@ -20,3 +20,6 @@ Thumbs.db
 .vscode/
 preparar-entrega.ps1
 publicar-a7.ps1
+
+# Scripts locales de entrega de EC2 F3 A8 y EC3 F1 A9
+entrega-a8-a9/
