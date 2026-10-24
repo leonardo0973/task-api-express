@@ -1,0 +1,1859 @@
+{
+  "info": {
+    "_postman_id": "b11457b4-ec19-4371-8c85-8d1152ec92dd",
+    "name": "Task API EC2 F3 A8",
+    "description": "EC2 F3 A8: paginación, filtros, búsqueda y ordenamiento. Ejecuta la colección completa con el Runner y la API encendida. Las consultas guiadas se acotan con createdFrom/createdTo (desafío) para que los totales correspondan solo a las cinco tareas creadas en la carpeta 1.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1 Datos de prueba",
+      "item": [
+        {
+          "name": "GET /health/database",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('runStart', new Date(Date.now() - 1000).toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "pm.test('Atlas status ok', () => pm.expect(body.data.status).to.eql('ok'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/database",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health",
+                "database"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST \"Aprender Express\"",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 201 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('id0', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Aprender Express\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST \"Documentar MongoDB\"",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 201 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('id1', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Documentar MongoDB\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST \"Practicar búsqueda\"",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 201 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('id2', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Practicar búsqueda\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST \"Revisar API\"",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 201 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('id3', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Revisar API\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST \"Preparar entrega\"",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 201 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('id4', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Preparar entrega\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH id1 -> completed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "pm.test('status completed', () => pm.expect(body.data.status).to.eql('completed'));",
+                  "pm.collectionVariables.set('runEnd', new Date(Date.now() + 1000).toISOString());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{id1}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{id1}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completed\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH id3 -> completed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "pm.test('status completed', () => pm.expect(body.data.status).to.eql('completed'));",
+                  "pm.collectionVariables.set('runEnd', new Date(Date.now() + 1000).toISOString());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{id3}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{id3}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completed\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 Positivas",
+      "item": [
+        {
+          "name": "GET /api/tasks (predeterminado)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "pm.test('data y meta; page 1, limit 10', () => { pm.expect(body.data).to.be.an('array'); pm.expect(body.meta.page).to.eql(1); pm.expect(body.meta.limit).to.eql(10); });",
+                  "pm.test('createdAt asc y sin _id ni __v', () => { body.data.forEach((t, i) => { pm.expect(t).to.not.have.property('_id'); pm.expect(t).to.not.have.property('__v'); if (i) pm.expect(t.createdAt >= body.data[i - 1].createdAt).to.be.true; }); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET page=1&limit=2 (conjunto guiado)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "pm.test('La página es válida', () => { pm.expect(body.data.length).to.be.at.most(2); pm.expect(body.meta.page).to.eql(1); pm.expect(body.meta.limit).to.eql(2); });",
+                  "pm.test('total 5, totalPages 3, hasNext true, hasPrev false', () => { pm.expect(body.meta.total).to.eql(5); pm.expect(body.meta.totalPages).to.eql(3); pm.expect(body.meta.hasNextPage).to.be.true; pm.expect(body.meta.hasPreviousPage).to.be.false; });",
+                  "pm.collectionVariables.set('page1Ids', JSON.stringify(body.data.map((t) => t.id)));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?page=1&limit=2&createdFrom={{runStart}}&createdTo={{runEnd}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "2"
+                },
+                {
+                  "key": "createdFrom",
+                  "value": "{{runStart}}"
+                },
+                {
+                  "key": "createdTo",
+                  "value": "{{runEnd}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET page=2&limit=2 (sin repetidos)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "const prev = JSON.parse(pm.collectionVariables.get('page1Ids') || '[]');",
+                  "pm.test('No repite documentos de la página 1', () => body.data.forEach((t) => pm.expect(prev).to.not.include(t.id)));",
+                  "pm.test('hasPreviousPage true', () => pm.expect(body.meta.hasPreviousPage).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?page=2&limit=2&createdFrom={{runStart}}&createdTo={{runEnd}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "2"
+                },
+                {
+                  "key": "limit",
+                  "value": "2"
+                },
+                {
+                  "key": "createdFrom",
+                  "value": "{{runStart}}"
+                },
+                {
+                  "key": "createdTo",
+                  "value": "{{runEnd}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET page=99&limit=2 (página posterior)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "pm.test('data vacío', () => pm.expect(body.data).to.have.lengthOf(0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?page=99&limit=2&createdFrom={{runStart}}&createdTo={{runEnd}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "99"
+                },
+                {
+                  "key": "limit",
+                  "value": "2"
+                },
+                {
+                  "key": "createdFrom",
+                  "value": "{{runStart}}"
+                },
+                {
+                  "key": "createdTo",
+                  "value": "{{runEnd}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET status=completed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "pm.test('Solo completed, total 2', () => { body.data.forEach((t) => pm.expect(t.status).to.eql('completed')); pm.expect(body.meta.total).to.eql(2); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?status=completed&createdFrom={{runStart}}&createdTo={{runEnd}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "completed"
+                },
+                {
+                  "key": "createdFrom",
+                  "value": "{{runStart}}"
+                },
+                {
+                  "key": "createdTo",
+                  "value": "{{runEnd}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET status=pending",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "pm.test('Solo pending, total 3', () => { body.data.forEach((t) => pm.expect(t.status).to.eql('pending')); pm.expect(body.meta.total).to.eql(3); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?status=pending&createdFrom={{runStart}}&createdTo={{runEnd}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                },
+                {
+                  "key": "createdFrom",
+                  "value": "{{runStart}}"
+                },
+                {
+                  "key": "createdTo",
+                  "value": "{{runEnd}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET search=api",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "pm.test('Incluye Revisar API', () => pm.expect(body.data.map((t) => t.title)).to.include('Revisar API'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?search=api&createdFrom={{runStart}}&createdTo={{runEnd}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "api"
+                },
+                {
+                  "key": "createdFrom",
+                  "value": "{{runStart}}"
+                },
+                {
+                  "key": "createdTo",
+                  "value": "{{runEnd}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET search=MONGODB",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "pm.test('Sin distinguir mayúsculas', () => pm.expect(body.data.map((t) => t.title)).to.include('Documentar MongoDB'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?search=MONGODB&createdFrom={{runStart}}&createdTo={{runEnd}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "MONGODB"
+                },
+                {
+                  "key": "createdFrom",
+                  "value": "{{runStart}}"
+                },
+                {
+                  "key": "createdTo",
+                  "value": "{{runEnd}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET search=.* (literal)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "pm.test('Se interpreta como texto literal', () => pm.expect(body.meta.total).to.eql(0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?search=.*&createdFrom={{runStart}}&createdTo={{runEnd}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ".*"
+                },
+                {
+                  "key": "createdFrom",
+                  "value": "{{runStart}}"
+                },
+                {
+                  "key": "createdTo",
+                  "value": "{{runEnd}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET sortBy=title&order=asc",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "const t = body.data.map((x) => x.title);",
+                  "pm.test('Orden alfabético', () => pm.expect(t).to.eql([...t].sort()));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?sortBy=title&order=asc&createdFrom={{runStart}}&createdTo={{runEnd}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "sortBy",
+                  "value": "title"
+                },
+                {
+                  "key": "order",
+                  "value": "asc"
+                },
+                {
+                  "key": "createdFrom",
+                  "value": "{{runStart}}"
+                },
+                {
+                  "key": "createdTo",
+                  "value": "{{runEnd}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET sortBy=title&order=desc",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "const t = body.data.map((x) => x.title);",
+                  "pm.test('Orden inverso', () => pm.expect(t).to.eql([...t].sort().reverse()));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?sortBy=title&order=desc&createdFrom={{runStart}}&createdTo={{runEnd}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "sortBy",
+                  "value": "title"
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                },
+                {
+                  "key": "createdFrom",
+                  "value": "{{runStart}}"
+                },
+                {
+                  "key": "createdTo",
+                  "value": "{{runEnd}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET sortBy=updatedAt&order=desc",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?sortBy=updatedAt&order=desc&createdFrom={{runStart}}&createdTo={{runEnd}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "sortBy",
+                  "value": "updatedAt"
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                },
+                {
+                  "key": "createdFrom",
+                  "value": "{{runStart}}"
+                },
+                {
+                  "key": "createdTo",
+                  "value": "{{runEnd}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET combinada",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "pm.test('Cumple status y search sin superar limit', () => { pm.expect(body.data.length).to.be.at.most(2); body.data.forEach((t) => { pm.expect(t.status).to.eql('pending'); pm.expect(t.title.toLowerCase()).to.include('entrega'); }); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?status=pending&search=entrega&page=1&limit=2&sortBy=title&order=asc&createdFrom={{runStart}}&createdTo={{runEnd}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                },
+                {
+                  "key": "search",
+                  "value": "entrega"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "2"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "title"
+                },
+                {
+                  "key": "order",
+                  "value": "asc"
+                },
+                {
+                  "key": "createdFrom",
+                  "value": "{{runStart}}"
+                },
+                {
+                  "key": "createdTo",
+                  "value": "{{runEnd}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Desafío: rango createdFrom/createdTo + completed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "pm.test('total 2', () => pm.expect(body.meta.total).to.eql(2));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?status=completed&createdFrom={{runStart}}&createdTo={{runEnd}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "completed"
+                },
+                {
+                  "key": "createdFrom",
+                  "value": "{{runStart}}"
+                },
+                {
+                  "key": "createdTo",
+                  "value": "{{runEnd}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3 Negativas",
+      "item": [
+        {
+          "name": "GET ?page=0",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 422 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(422));",
+                  "pm.test('QUERY_VALIDATION_ERROR con details y requestId', () => {",
+                  "  pm.expect(body.error.code).to.eql('QUERY_VALIDATION_ERROR');",
+                  "  pm.expect(body.error.details).to.be.an('array');",
+                  "  pm.expect(body.error.details.map((d) => d.field)).to.include('page');",
+                  "  pm.expect(body.error.requestId).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?page=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET ?page=abc",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 422 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(422));",
+                  "pm.test('QUERY_VALIDATION_ERROR con details y requestId', () => {",
+                  "  pm.expect(body.error.code).to.eql('QUERY_VALIDATION_ERROR');",
+                  "  pm.expect(body.error.details).to.be.an('array');",
+                  "  pm.expect(body.error.details.map((d) => d.field)).to.include('page');",
+                  "  pm.expect(body.error.requestId).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?page=abc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "abc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET ?page=1&page=2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 422 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(422));",
+                  "pm.test('QUERY_VALIDATION_ERROR con details y requestId', () => {",
+                  "  pm.expect(body.error.code).to.eql('QUERY_VALIDATION_ERROR');",
+                  "  pm.expect(body.error.details).to.be.an('array');",
+                  "  pm.expect(body.error.details.map((d) => d.field)).to.include('page');",
+                  "  pm.expect(body.error.requestId).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?page=1&page=2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page",
+                  "value": "2"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET ?limit=0",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 422 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(422));",
+                  "pm.test('QUERY_VALIDATION_ERROR con details y requestId', () => {",
+                  "  pm.expect(body.error.code).to.eql('QUERY_VALIDATION_ERROR');",
+                  "  pm.expect(body.error.details).to.be.an('array');",
+                  "  pm.expect(body.error.details.map((d) => d.field)).to.include('limit');",
+                  "  pm.expect(body.error.requestId).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?limit=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET ?limit=51",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 422 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(422));",
+                  "pm.test('QUERY_VALIDATION_ERROR con details y requestId', () => {",
+                  "  pm.expect(body.error.code).to.eql('QUERY_VALIDATION_ERROR');",
+                  "  pm.expect(body.error.details).to.be.an('array');",
+                  "  pm.expect(body.error.details.map((d) => d.field)).to.include('limit');",
+                  "  pm.expect(body.error.requestId).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?limit=51",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "51"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET ?status=archived",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 422 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(422));",
+                  "pm.test('QUERY_VALIDATION_ERROR con details y requestId', () => {",
+                  "  pm.expect(body.error.code).to.eql('QUERY_VALIDATION_ERROR');",
+                  "  pm.expect(body.error.details).to.be.an('array');",
+                  "  pm.expect(body.error.details.map((d) => d.field)).to.include('status');",
+                  "  pm.expect(body.error.requestId).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?status=archived",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "archived"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET ?search=",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 422 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(422));",
+                  "pm.test('QUERY_VALIDATION_ERROR con details y requestId', () => {",
+                  "  pm.expect(body.error.code).to.eql('QUERY_VALIDATION_ERROR');",
+                  "  pm.expect(body.error.details).to.be.an('array');",
+                  "  pm.expect(body.error.details.map((d) => d.field)).to.include('search');",
+                  "  pm.expect(body.error.requestId).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?search=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET ?search=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 422 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(422));",
+                  "pm.test('QUERY_VALIDATION_ERROR con details y requestId', () => {",
+                  "  pm.expect(body.error.code).to.eql('QUERY_VALIDATION_ERROR');",
+                  "  pm.expect(body.error.details).to.be.an('array');",
+                  "  pm.expect(body.error.details.map((d) => d.field)).to.include('search');",
+                  "  pm.expect(body.error.requestId).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?search=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET ?sortBy=priority",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 422 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(422));",
+                  "pm.test('QUERY_VALIDATION_ERROR con details y requestId', () => {",
+                  "  pm.expect(body.error.code).to.eql('QUERY_VALIDATION_ERROR');",
+                  "  pm.expect(body.error.details).to.be.an('array');",
+                  "  pm.expect(body.error.details.map((d) => d.field)).to.include('sortBy');",
+                  "  pm.expect(body.error.requestId).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?sortBy=priority",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "sortBy",
+                  "value": "priority"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET ?order=sideways",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 422 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(422));",
+                  "pm.test('QUERY_VALIDATION_ERROR con details y requestId', () => {",
+                  "  pm.expect(body.error.code).to.eql('QUERY_VALIDATION_ERROR');",
+                  "  pm.expect(body.error.details).to.be.an('array');",
+                  "  pm.expect(body.error.details.map((d) => d.field)).to.include('order');",
+                  "  pm.expect(body.error.requestId).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?order=sideways",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "order",
+                  "value": "sideways"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET ?owner=ana",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 422 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(422));",
+                  "pm.test('QUERY_VALIDATION_ERROR con details y requestId', () => {",
+                  "  pm.expect(body.error.code).to.eql('QUERY_VALIDATION_ERROR');",
+                  "  pm.expect(body.error.details).to.be.an('array');",
+                  "  pm.expect(body.error.details.map((d) => d.field)).to.include('owner');",
+                  "  pm.expect(body.error.requestId).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?owner=ana",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "owner",
+                  "value": "ana"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET ?createdFrom=2026-13-40",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 422 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(422));",
+                  "pm.test('QUERY_VALIDATION_ERROR con details y requestId', () => {",
+                  "  pm.expect(body.error.code).to.eql('QUERY_VALIDATION_ERROR');",
+                  "  pm.expect(body.error.details).to.be.an('array');",
+                  "  pm.expect(body.error.details.map((d) => d.field)).to.include('createdFrom');",
+                  "  pm.expect(body.error.requestId).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?createdFrom=2026-13-40",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "createdFrom",
+                  "value": "2026-13-40"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET ?createdFrom=2026-12-01&createdTo=2026-01-01",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 422 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(422));",
+                  "pm.test('QUERY_VALIDATION_ERROR con details y requestId', () => {",
+                  "  pm.expect(body.error.code).to.eql('QUERY_VALIDATION_ERROR');",
+                  "  pm.expect(body.error.details).to.be.an('array');",
+                  "  pm.expect(body.error.details.map((d) => d.field)).to.include('createdFrom');",
+                  "  pm.expect(body.error.requestId).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?createdFrom=2026-12-01&createdTo=2026-01-01",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "createdFrom",
+                  "value": "2026-12-01"
+                },
+                {
+                  "key": "createdTo",
+                  "value": "2026-01-01"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4 Regresión CRUD",
+      "item": [
+        {
+          "name": "POST /api/tasks",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 201 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('taskId', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Regresión A8\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /api/tasks/{{taskId}}",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH /api/tasks/{{taskId}}",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Regresión A8 actualizada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "PATCH /api/tasks/{{taskId}}/complete",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "pm.test('completed', () => pm.expect(body.data.status).to.eql('completed'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}/complete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}",
+                "complete"
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE /api/tasks/{{taskId}}",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 204 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(204));",
+                  "pm.test('Sin cuerpo', () => pm.expect(pm.response.text()).to.eql(''));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET eliminado (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 404 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(404));",
+                  "pm.test('TASK_NOT_FOUND', () => pm.expect(body.error.code).to.eql('TASK_NOT_FOUND'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/tasks/123 (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 400 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(400));",
+                  "pm.test('INVALID_ID', () => pm.expect(body.error.code).to.eql('INVALID_ID'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/123",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "123"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "runStart",
+      "value": ""
+    },
+    {
+      "key": "runEnd",
+      "value": ""
+    },
+    {
+      "key": "page1Ids",
+      "value": ""
+    },
+    {
+      "key": "taskId",
+      "value": ""
+    },
+    {
+      "key": "id0",
+      "value": ""
+    },
+    {
+      "key": "id1",
+      "value": ""
+    },
+    {
+      "key": "id2",
+      "value": ""
+    },
+    {
+      "key": "id3",
+      "value": ""
+    },
+    {
+      "key": "id4",
+      "value": ""
+    }
+  ]
+}
