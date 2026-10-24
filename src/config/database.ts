@@ -28,8 +28,8 @@ const registerConnectionListeners = (): void => {
 export const connectDatabase = async (env: AppEnv): Promise<void> => {
   mongoose.set('strictQuery', true);
 
-  await mongoose.connect(env.mongodbUri, {
-    dbName: env.mongodbDbName,
+  await mongoose.connect(env.MONGODB_URI, {
+    dbName: env.MONGODB_DB_NAME,
     serverSelectionTimeoutMS: 8000,
     appName: 'task-api-express'
   });
