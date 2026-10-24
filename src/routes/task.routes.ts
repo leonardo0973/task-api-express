@@ -9,6 +9,7 @@ import {
 } from '../controllers/task.controller.js';
 import { requireJson } from '../middlewares/require-json.middleware.js';
 import { validateTaskId } from '../middlewares/validate-task-id.middleware.js';
+import { validateTaskQuery } from '../middlewares/validate-task-query.middleware.js';
 import { validateTaskTitle } from '../middlewares/validate-task-title.middleware.js';
 import { validateTaskUpdate } from '../middlewares/validate-task-update.middleware.js';
 
@@ -16,7 +17,7 @@ export const taskRouter = Router();
 
 taskRouter.param('id', validateTaskId);
 
-taskRouter.get('/', getTasks);
+taskRouter.get('/', validateTaskQuery, getTasks);
 taskRouter.get('/:id', getTask);
 taskRouter.post('/', requireJson, validateTaskTitle, postTask);
 taskRouter.patch('/:id', requireJson, validateTaskUpdate, patchTask);
