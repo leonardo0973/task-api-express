@@ -1,12 +1,19 @@
-import mongoose, { type HydratedDocument } from 'mongoose';
+import type { HydratedDocument } from 'mongoose';
 import { AppError } from '../errors/app-error.js';
-import {
-  TaskModel,
-  type Task,
-  type TaskPersistence,
-  type TaskPriority,
-  type TaskUpdate
+import type {
+  Task,
+  TaskPersistence,
+  TaskPriority,
+  TaskUpdate
 } from '../models/task.js';
+import {
+  createTaskDocument,
+  deleteTaskDocument,
+  findTaskDocumentById,
+  findTaskDocuments,
+  updateTaskDocument
+} from '../repositories/task.repository.js';
+import type { TaskListQuery, TaskListResult } from '../types/task-query.js';
 
 const toTask = (document: HydratedDocument<TaskPersistence>): Task => ({
   id: document._id.toString(),
@@ -17,95 +24,54 @@ const toTask = (document: HydratedDocument<TaskPersistence>): Task => ({
   updatedAt: document.updatedAt
 });
 
-const mapPersistenceError = (error: unknown): AppError => {
-  if (error instanceof AppError) return error;
+const notFound = (id: string): AppError =>
+  new AppError(`No existe una tarea con el id ${id}.`, 404, 'TASK_NOT_FOUND');
 
-  if (error instanceof mongoose.Error.ValidationError) {
-    const details = Object.values(error.errors).map((item) => ({
-      field: item.path,
-      message: item.message
-    }));
-    return new AppError(
-      'La tarea no cumple las reglas del modelo.',
-      422,
-      'PERSISTENCE_VALIDATION_ERROR',
-      details
-    );
-  }
-
-  return new AppError(
-    'No fue posible acceder al almacenamiento de tareas.',
-    503,
-    'DATABASE_UNAVAILABLE'
-  );
-};
-
-export const listTasks = async (): Promise<Task[]> => {
-  try {
-    const documents = await TaskModel.find().sort({ createdAt: 1 });
-    return documents.map(toTask);
-  } catch (error: unknown) {
-    throw mapPersistenceError(error);
-  }
+export const listTasks = async (
+  query: TaskListQuery
+): Promise<TaskListResult> => {
+  const { documents, total } = await findTaskDocuments(query);
+  const totalPages = Math.ceil(total / query.limit);
+  return {
+    data: documents.map(toTask),
+    meta: {
+      page: query.page,
+      limit: query.limit,
+      total,
+      totalPages,
+      hasNextPage: query.page < totalPages,
+      hasPreviousPage: query.page > 1 && totalPages > 0
+    }
+  };
 };
 
 export const findTaskById = async (id: string): Promise<Task> => {
-  try {
-    const document = await TaskModel.findById(id);
-    if (!document) {
-      throw new AppError(`No existe una tarea con el id ${id}.`, 404, 'TASK_NOT_FOUND');
-    }
-    return toTask(document);
-  } catch (error: unknown) {
-    throw mapPersistenceError(error);
-  }
+  const document = await findTaskDocumentById(id);
+  if (!document) throw notFound(id);
+  return toTask(document);
 };
 
 export const createTask = async (
   title: string,
   priority?: TaskPriority
 ): Promise<Task> => {
-  try {
-    const document = await TaskModel.create({
-      title,
-      status: 'pending',
-      ...(priority ? { priority } : {})
-    });
-    return toTask(document);
-  } catch (error: unknown) {
-    throw mapPersistenceError(error);
-  }
+  const document = await createTaskDocument(title, priority);
+  return toTask(document);
 };
 
 export const updateTask = async (
   id: string,
   changes: TaskUpdate
 ): Promise<Task> => {
-  try {
-    const document = await TaskModel.findByIdAndUpdate(
-      id,
-      { $set: changes },
-      { new: true, runValidators: true }
-    );
-    if (!document) {
-      throw new AppError(`No existe una tarea con el id ${id}.`, 404, 'TASK_NOT_FOUND');
-    }
-    return toTask(document);
-  } catch (error: unknown) {
-    throw mapPersistenceError(error);
-  }
+  const document = await updateTaskDocument(id, changes);
+  if (!document) throw notFound(id);
+  return toTask(document);
 };
 
 export const completeTask = async (id: string): Promise<Task> =>
   updateTask(id, { status: 'completed' });
 
 export const deleteTask = async (id: string): Promise<void> => {
-  try {
-    const document = await TaskModel.findByIdAndDelete(id);
-    if (!document) {
-      throw new AppError(`No existe una tarea con el id ${id}.`, 404, 'TASK_NOT_FOUND');
-    }
-  } catch (error: unknown) {
-    throw mapPersistenceError(error);
-  }
+  const document = await deleteTaskDocument(id);
+  if (!document) throw notFound(id);
 };
