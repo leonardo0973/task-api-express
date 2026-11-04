@@ -10,6 +10,9 @@ export interface AppEnv {
   JWT_EXPIRES_IN: string;
   JWT_ISSUER: string;
   JWT_AUDIENCE: string;
+  CORS_ORIGIN: string;
+  AUTH_RATE_LIMIT_WINDOW_MS: number;
+  AUTH_RATE_LIMIT_MAX: number;
 }
 
 export class EnvValidationError extends Error {
@@ -22,6 +25,23 @@ export class EnvValidationError extends Error {
 const DB_NAME_PATTERN = /^[A-Za-z0-9_-]{1,63}$/;
 const EXPIRATION_PATTERN = /^\d+[smhd]$/;
 const MIN_JWT_SECRET_BYTES = 32;
+// Origen exacto: esquema, host y puerto opcional, sin ruta ni barra final.
+const ORIGIN_PATTERN = /^https?:\/\/[A-Za-z0-9.-]+(:\d{1,5})?$/;
+
+// Rechaza cero, negativos, decimales y texto para no aceptar límites ambiguos.
+const parsePositiveInteger = (
+  source: NodeJS.ProcessEnv,
+  name: string,
+  fallback: string,
+  issues: string[]
+): number => {
+  const raw = source[name]?.trim() || fallback;
+  const value = Number(raw);
+  if (!/^\d+$/.test(raw) || !Number.isInteger(value) || value < 1) {
+    issues.push(`${name} debe ser un número entero mayor que cero.`);
+  }
+  return value;
+};
 
 export const loadEnv = (source: NodeJS.ProcessEnv = process.env): AppEnv => {
   const issues: string[] = [];
@@ -61,6 +81,16 @@ export const loadEnv = (source: NodeJS.ProcessEnv = process.env): AppEnv => {
     issues.push('JWT_EXPIRES_IN debe usar un formato como 15m, 1h o 7d.');
   }
 
+  const corsOrigin = source.CORS_ORIGIN?.trim() ?? '';
+  if (!corsOrigin) {
+    issues.push('Falta la variable de entorno CORS_ORIGIN.');
+  } else if (corsOrigin === '*' || !ORIGIN_PATTERN.test(corsOrigin)) {
+    issues.push('CORS_ORIGIN debe ser un origen exacto como http://localhost:5173 (sin * ni ruta final).');
+  }
+
+  const authRateLimitWindowMs = parsePositiveInteger(source, 'AUTH_RATE_LIMIT_WINDOW_MS', '900000', issues);
+  const authRateLimitMax = parsePositiveInteger(source, 'AUTH_RATE_LIMIT_MAX', '10', issues);
+
   if (issues.length > 0) {
     throw new EnvValidationError(issues);
   }
@@ -72,7 +102,10 @@ export const loadEnv = (source: NodeJS.ProcessEnv = process.env): AppEnv => {
     JWT_SECRET: jwtSecret,
     JWT_EXPIRES_IN: jwtExpiresIn,
     JWT_ISSUER: source.JWT_ISSUER?.trim() || 'task-api-express',
-    JWT_AUDIENCE: source.JWT_AUDIENCE?.trim() || 'task-api-client'
+    JWT_AUDIENCE: source.JWT_AUDIENCE?.trim() || 'task-api-client',
+    CORS_ORIGIN: corsOrigin,
+    AUTH_RATE_LIMIT_WINDOW_MS: authRateLimitWindowMs,
+    AUTH_RATE_LIMIT_MAX: authRateLimitMax
   });
 };
 
