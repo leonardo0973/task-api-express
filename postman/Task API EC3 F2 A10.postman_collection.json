@@ -1,0 +1,1014 @@
+{
+  "info": {
+    "_postman_id": "fbd54162-1a60-426e-b6d7-3b0c2d418e53",
+    "name": "Task API EC3 F2 A10",
+    "description": "EC3 F2 A10: Bearer JWT, roles y controles HTTP. Selecciona el entorno 'A10 local' y ejecuta con el Runner con la API recién iniciada (el límite de autenticación es de 10 solicitudes por IP cada 15 minutos). La cuenta postman.admin.a10@example.com se promueve con: pnpm role:set postman.admin.a10@example.com admin",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1 Rutas públicas",
+      "item": [
+        {
+          "name": "GET /health (Helmet)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "pm.test('Helmet: X-Content-Type-Options nosniff', () => pm.expect(pm.response.headers.get('X-Content-Type-Options')).to.eql('nosniff'));",
+                  "pm.test('Sin X-Powered-By', () => pm.expect(pm.response.headers.has('X-Powered-By')).to.be.false);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "POST /api/auth/register",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('userEmail', `ana.torres.postman.${Date.now()}@example.com`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 201 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(201));",
+                  "pm.test('Cuenta user sin passwordHash', () => { pm.expect(body.data.user.role).to.eql('user'); pm.expect(pm.response.text()).to.not.include('passwordHash'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ana Torres\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"Frase segura para clase 2026\",\n  \"confirmPassword\": \"Frase segura para clase 2026\"\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "POST /api/auth/login (user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "const setVar = (k, v) => (pm.environment.name ? pm.environment.set(k, v) : pm.collectionVariables.set(k, v));",
+                  "pm.test('JWT Bearer con role user', () => { pm.expect(body.data.tokenType).to.eql('Bearer'); pm.expect(body.data.user.role).to.eql('user'); });",
+                  "setVar('userToken', body.data.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"Frase segura para clase 2026\"\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "POST /api/auth/login (admin promovido con pnpm role:set)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "const setVar = (k, v) => (pm.environment.name ? pm.environment.set(k, v) : pm.collectionVariables.set(k, v));",
+                  "pm.test('role admin en el nuevo token', () => pm.expect(body.data.user.role).to.eql('admin'));",
+                  "setVar('adminToken', body.data.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"postman.admin.a10@example.com\",\n  \"password\": \"Frase segura para clase 2026\"\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 Pruebas negativas A10",
+      "item": [
+        {
+          "name": "GET /api/tasks sin Authorization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 401 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(401));",
+                  "pm.test('AUTHENTICATION_REQUIRED con requestId', () => { pm.expect(body.error.code).to.eql('AUTHENTICATION_REQUIRED'); pm.expect(body.error.requestId).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /api/tasks token sin Bearer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 401 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(401));",
+                  "pm.test('INVALID_AUTHORIZATION_HEADER con requestId', () => { pm.expect(body.error.code).to.eql('INVALID_AUTHORIZATION_HEADER'); pm.expect(body.error.requestId).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{userToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /api/tasks Bearer inválido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 401 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(401));",
+                  "pm.test('INVALID_TOKEN con requestId', () => { pm.expect(body.error.code).to.eql('INVALID_TOKEN'); pm.expect(body.error.requestId).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer token.invalido.firmado"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3 CRUD autenticado y roles",
+      "item": [
+        {
+          "name": "POST /api/tasks (user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 201 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('taskId', body.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Probar middleware de autenticación\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET consulta avanzada (user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "pm.test('data y meta filtrados', () => { pm.expect(body.meta.limit).to.eql(5); body.data.forEach((t) => { pm.expect(t.status).to.eql('pending'); pm.expect(t.title.toLowerCase()).to.include('middleware'); }); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?page=1&limit=5&status=pending&search=middleware&sortBy=title&order=asc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                },
+                {
+                  "key": "status",
+                  "value": "pending"
+                },
+                {
+                  "key": "search",
+                  "value": "middleware"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "title"
+                },
+                {
+                  "key": "order",
+                  "value": "asc"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/tasks/{{taskId}} (user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH /api/tasks/{{taskId}} (user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Probar middleware de autenticación A10\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH /api/tasks/{{taskId}}/complete (user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "pm.test('completed', () => pm.expect(body.data.status).to.eql('completed'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}/complete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}",
+                "complete"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE /api/tasks/{{taskId}} (user → 403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 403 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(403));",
+                  "pm.test('FORBIDDEN con requestId', () => { pm.expect(body.error.code).to.eql('FORBIDDEN'); pm.expect(body.error.requestId).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE /api/tasks/{{taskId}} (admin → 204)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 204 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(204));",
+                  "pm.test('Sin cuerpo', () => pm.expect(pm.response.text()).to.eql(''));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4 Regresión EC2 y A9",
+      "item": [
+        {
+          "name": "GET /api/tasks?page=0 (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 422 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(422));",
+                  "pm.test('QUERY_VALIDATION_ERROR con requestId', () => { pm.expect(body.error.code).to.eql('QUERY_VALIDATION_ERROR'); pm.expect(body.error.requestId).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?page=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH /api/tasks/id-invalido (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 400 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(400));",
+                  "pm.test('INVALID_ID con requestId', () => { pm.expect(body.error.code).to.eql('INVALID_ID'); pm.expect(body.error.requestId).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/id-invalido",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "id-invalido"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Cambio\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/tasks text/plain (415)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 415 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(415));",
+                  "pm.test('UNSUPPORTED_MEDIA_TYPE con requestId', () => { pm.expect(body.error.code).to.eql('UNSUPPORTED_MEDIA_TYPE'); pm.expect(body.error.requestId).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "Tarea inválida"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5 Desafío GET /api/auth/me",
+      "item": [
+        {
+          "name": "GET /api/auth/me (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "pm.test('Solo userId y role', () => { pm.expect(body.data.identity).to.have.all.keys('userId', 'role'); pm.expect(body.data.identity.role).to.eql('admin'); pm.expect(pm.response.text()).to.not.match(/accessToken|email|passwordHash/); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/auth/me sin token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 401 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(401));",
+                  "pm.test('AUTHENTICATION_REQUIRED con requestId', () => { pm.expect(body.error.code).to.eql('AUTHENTICATION_REQUIRED'); pm.expect(body.error.requestId).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6 Controles HTTP",
+      "item": [
+        {
+          "name": "GET /health Origin permitido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "pm.test('Access-Control-Allow-Origin presente', () => pm.expect(pm.response.headers.get('Access-Control-Allow-Origin')).to.eql('http://localhost:5173'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "http://localhost:5173"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /health Origin no permitido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.code === 204 ? null : pm.response.json();",
+                  "pm.test('Código 200 · requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.response.to.have.status(200));",
+                  "pm.test('Access-Control-Allow-Origin ausente', () => pm.expect(pm.response.headers.has('Access-Control-Allow-Origin')).to.be.false);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "https://sitio-no-autorizado.example"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "POST /api/auth/login hasta superar el máximo (429)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const n = Number(pm.collectionVariables.get('intentos') || 0) + 1;",
+                  "pm.collectionVariables.set('intentos', n);",
+                  "if (pm.response.code !== 429 && n < 15) {",
+                  "  pm.test(`Intento ${n}: ${pm.response.code} (aún dentro del límite)`, () => pm.expect(pm.response.code).to.be.oneOf([401, 429]));",
+                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "  const body = pm.response.json();",
+                  "  pm.test(`429 AUTH_RATE_LIMIT_EXCEEDED tras ${n} intentos · requestId ` + pm.response.headers.get('X-Request-Id'), () => { pm.expect(pm.response.code).to.eql(429); pm.expect(body.error.code).to.eql('AUTH_RATE_LIMIT_EXCEEDED'); });",
+                  "  pm.collectionVariables.set('intentos', 0);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nadie@example.com\",\n  \"password\": \"Contraseña equivocada 2026\"\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "userEmail",
+      "value": ""
+    },
+    {
+      "key": "taskId",
+      "value": ""
+    },
+    {
+      "key": "intentos",
+      "value": "0"
+    }
+  ]
+}

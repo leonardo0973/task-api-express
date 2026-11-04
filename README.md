@@ -22,6 +22,9 @@ Copia `.env.example` como `.env` y completa los valores. **`.env` nunca se sube 
 | `JWT_EXPIRES_IN` | No (`1h`) | Vigencia del token: número seguido de `s`, `m`, `h` o `d`. |
 | `JWT_ISSUER` | No (`task-api-express`) | Emisor que se firma y se exige al verificar. |
 | `JWT_AUDIENCE` | No (`task-api-client`) | Audiencia que se firma y se exige al verificar. |
+| `CORS_ORIGIN` | Sí | Origen exacto del frontend permitido por CORS (por ejemplo `http://localhost:5173`). |
+| `AUTH_RATE_LIMIT_WINDOW_MS` | No (`900000`) | Ventana del límite de autenticación en milisegundos (15 min). |
+| `AUTH_RATE_LIMIT_MAX` | No (`10`) | Solicitudes a `/api/auth` permitidas por IP en cada ventana. |
 
 La API valida estas variables al arrancar. Si falta alguna o tiene formato incorrecto, se
 detiene con un mensaje descriptivo sin mostrar valores reales.
@@ -108,7 +111,19 @@ desconocido, repetido o inválido responde `422 QUERY_VALIDATION_ERROR` con `det
 - Las contraseñas se guardan solo como hash bcrypt (12 rondas, `bcryptjs`); `passwordHash` tiene `select: false`.
 - El JWT (`jose`, HS256) contiene únicamente `sub`, `role`, `iss`, `aud`, `iat` y `exp`.
 - Errores: `409 USER_EMAIL_EXISTS`, `422 AUTH_VALIDATION_ERROR`, `401 INVALID_CREDENTIALS` (mismo mensaje para correo inexistente y contraseña incorrecta), `415`, `400 INVALID_JSON`.
-- En A9 las rutas de tareas siguen públicas; la protección con token llega en A10.
+- `GET /api/auth/me` (desafío A10) requiere Bearer y devuelve solo `data.identity` con `userId` y `role`.
+
+### Protección y roles (EC3 F2 A10)
+
+| Ruta | Pública | user | admin |
+|---|---|---|---|
+| `GET /health`, `POST /api/auth/register`, `POST /api/auth/login` | Sí | Sí | Sí |
+| `GET/POST/PATCH /api/tasks...` | No (401) | Permitido | Permitido |
+| `DELETE /api/tasks/:id` | No (401) | 403 `FORBIDDEN` | Permitido |
+
+- Enviar `Authorization: Bearer <accessToken>`. Errores: `401 AUTHENTICATION_REQUIRED` (sin encabezado), `401 INVALID_AUTHORIZATION_HEADER` (formato incorrecto), `401 INVALID_TOKEN` (firma, emisor, audiencia o expiración), `403 FORBIDDEN` (rol sin permiso).
+- Controles HTTP: Helmet (cabeceras de seguridad), CORS limitado a `CORS_ORIGIN` y límite de `AUTH_RATE_LIMIT_MAX` solicitudes por IP a `/api/auth` (`429 AUTH_RATE_LIMIT_EXCEEDED`).
+- Cambiar el rol de una cuenta (solo desde la terminal, no hay ruta HTTP): `pnpm role:set <correo> <user|admin>`. Después hay que iniciar sesión otra vez para recibir un token con el rol nuevo.
 
 ### Actualización parcial
 
@@ -161,6 +176,7 @@ Al recibir `SIGINT` (Ctrl+C) o `SIGTERM` la API:
 - Acceso de red restringido a la IP del equipo de desarrollo.
 - La terminal y las respuestas nunca muestran la URI, la contraseña, el host, el stack ni objetos internos de Mongoose.
 - Las contraseñas nunca se guardan ni se responden en texto plano; el cliente no puede enviar `role` ni `passwordHash`.
+- `/api/tasks` exige JWT y solo `admin` elimina; Helmet, CORS con origen exacto y límite de intentos en autenticación.
 - `JWT_SECRET` se genera con `randomBytes(32)` y solo existe en `.env`.
 - Verificación: `git check-ignore .env` debe imprimir `.env` y `git ls-files .env` no debe imprimir nada.
 
@@ -200,5 +216,10 @@ postman/
 ├── Task API EC2 F2 A6.postman_collection.json
 ├── Task API EC2 F2 A7.postman_collection.json
 ├── Task API EC2 F3 A8.postman_collection.json
-└── Task API EC3 F1 A9.postman_collection.json
+├── Task API EC3 F1 A9.postman_collection.json
+├── Task API EC3 F2 A10.postman_collection.json
+└── A10 local.postman_environment.json
+evidencias/
+├── ec3-a10.md                       # EC3 F2 A10
+└── capturas/
 ```
