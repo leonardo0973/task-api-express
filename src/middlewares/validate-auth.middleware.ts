@@ -67,12 +67,15 @@ const readPassword = (
 };
 
 // Desafío individual A9: confirmPassword pertenece solo al contrato HTTP.
-// Se exige y se compara aquí, y nunca se copia a RegisterInput.
+// Es opcional (el Frontend EC3 A11 envía solo name, email y password y compara
+// la confirmación en el navegador); si llega, se valida aquí y nunca se copia
+// a RegisterInput.
 const checkConfirmPassword = (
   body: Record<string, unknown>,
   password: string | undefined,
   issues: FieldIssue[]
 ): void => {
+  if (body.confirmPassword === undefined) return;
   if (typeof body.confirmPassword !== 'string' || !body.confirmPassword) {
     issues.push({ field: 'confirmPassword', message: 'Debe ser texto no vacío.' });
     return;

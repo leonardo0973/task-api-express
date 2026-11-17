@@ -25,6 +25,10 @@ export interface LoginResult {
   expiresIn: string;
 }
 
+export interface CurrentUserResult {
+  user: User;
+}
+
 export interface AccessTokenSubject {
   userId: string;
   role: UserRole;

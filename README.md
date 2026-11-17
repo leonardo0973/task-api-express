@@ -105,13 +105,13 @@ desconocido, repetido o inválido responde `422 QUERY_VALIDATION_ERROR` con `det
 
 | Método | Ruta | Éxito | Descripción |
 |---|---|---|---|
-| POST | `/api/auth/register` | 201 | Recibe `name`, `email`, `password` (15 caracteres a 72 bytes) y `confirmPassword`. Devuelve `data.user` sin contraseña ni hash; el rol siempre es `user`. |
+| POST | `/api/auth/register` | 201 | Recibe `name`, `email`, `password` (15 caracteres a 72 bytes) y, de forma opcional, `confirmPassword` (si se envía debe coincidir). Devuelve `data.user` sin contraseña ni hash; el rol siempre es `user`. |
 | POST | `/api/auth/login` | 200 | Recibe `email` y `password`. Devuelve `data.user`, `accessToken`, `tokenType: "Bearer"` y `expiresIn`. |
 
 - Las contraseñas se guardan solo como hash bcrypt (12 rondas, `bcryptjs`); `passwordHash` tiene `select: false`.
 - El JWT (`jose`, HS256) contiene únicamente `sub`, `role`, `iss`, `aud`, `iat` y `exp`.
 - Errores: `409 USER_EMAIL_EXISTS`, `422 AUTH_VALIDATION_ERROR`, `401 INVALID_CREDENTIALS` (mismo mensaje para correo inexistente y contraseña incorrecta), `415`, `400 INVALID_JSON`.
-- `GET /api/auth/me` (desafío A10) requiere Bearer y devuelve solo `data.identity` con `userId` y `role`.
+- `GET /api/auth/me` requiere Bearer y devuelve `data.user` (usuario público actual, sin contraseña ni hash). El identificador se obtiene del JWT verificado; si la cuenta ya no existe responde 401 `INVALID_TOKEN`.
 
 ### Protección y roles (EC3 F2 A10)
 

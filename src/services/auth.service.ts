@@ -4,9 +4,11 @@ import type { User } from '../models/user.js';
 import {
   createUserDocument,
   findUserDocumentByEmail,
+  findUserDocumentById,
   type UserDocument
 } from '../repositories/user.repository.js';
 import type {
+  CurrentUserResult,
   LoginInput,
   LoginResult,
   RegisterInput,
@@ -66,4 +68,14 @@ export const loginUser = async (input: LoginInput): Promise<LoginResult> => {
     tokenType: 'Bearer',
     expiresIn: env.JWT_EXPIRES_IN
   };
+};
+
+// A11: el identificador proviene del JWT verificado por authenticate.
+// Si la cuenta ya no existe, el token deja de representar una identidad válida.
+export const getCurrentUser = async (userId: string): Promise<CurrentUserResult> => {
+  const document = await findUserDocumentById(userId);
+  if (!document) {
+    throw new AppError('El token no contiene una identidad válida.', 401, 'INVALID_TOKEN');
+  }
+  return { user: toUser(document) };
 };

@@ -62,6 +62,14 @@ export const findUserDocumentByEmail = async (
   return query;
 });
 
+// A11: identidad actual para GET /api/auth/me (sin passwordHash).
+export const findUserDocumentById = async (
+  id: string
+): Promise<UserDocument | null> => execute(async () => {
+  if (!mongoose.isValidObjectId(id)) return null;
+  return UserModel.findById(id);
+});
+
 export const createUserDocument = async (
   data: CreateUserRecord
 ): Promise<UserDocument> => execute(async () => UserModel.create(data));
