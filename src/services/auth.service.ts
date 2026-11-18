@@ -8,7 +8,6 @@ import {
   type UserDocument
 } from '../repositories/user.repository.js';
 import type {
-  CurrentUserResult,
   LoginInput,
   LoginResult,
   RegisterInput,
@@ -71,11 +70,16 @@ export const loginUser = async (input: LoginInput): Promise<LoginResult> => {
 };
 
 // A11: el identificador proviene del JWT verificado por authenticate.
-// Si la cuenta ya no existe, el token deja de representar una identidad válida.
-export const getCurrentUser = async (userId: string): Promise<CurrentUserResult> => {
+// La firma puede ser válida aunque la cuenta se haya eliminado después:
+// en ese caso el token ya no representa una identidad disponible (401, no 404).
+export const getAuthenticatedUser = async (userId: string): Promise<User> => {
   const document = await findUserDocumentById(userId);
   if (!document) {
-    throw new AppError('El token no contiene una identidad válida.', 401, 'INVALID_TOKEN');
+    throw new AppError(
+      'La cuenta asociada al token ya no está disponible.',
+      401,
+      'AUTHENTICATED_USER_NOT_FOUND'
+    );
   }
-  return { user: toUser(document) };
+  return toUser(document);
 };

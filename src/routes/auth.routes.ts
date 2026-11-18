@@ -7,8 +7,13 @@ import { validateLogin, validateRegister } from '../middlewares/validate-auth.mi
 
 export const authRouter = Router();
 
-authRouter.use(authRateLimiter);
-authRouter.post('/register', requireJson, validateRegister, postRegister);
-authRouter.post('/login', requireJson, validateLogin, postLogin);
-// Desafío individual A10: identidad del token, sin consultar MongoDB.
+// A11: el límite se aplica solo a los intentos de credenciales, no a /me.
+authRouter.post(
+  '/register',
+  authRateLimiter,
+  requireJson,
+  validateRegister,
+  postRegister
+);
+authRouter.post('/login', authRateLimiter, requireJson, validateLogin, postLogin);
 authRouter.get('/me', authenticate, getMe);
