@@ -1,0 +1,355 @@
+{
+  "info": {
+    "_postman_id": "4cbe7758-12db-4c5a-a016-7813127c19c5",
+    "name": "Task API EC3 F2 A11",
+    "description": "EC3 F2 A11: documentación OpenAPI, GET /api/auth/me y regresión con Atlas. Selecciona el entorno 'A10 local' (guarda userToken solo localmente) y ejecuta con el Runner con la API encendida. La colección A10 se conserva sin cambios.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "A11",
+      "item": [
+        {
+          "name": "GET /health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 200 y status ok', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().status).to.eql('ok'); });",
+                  "pm.test('requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.expect(pm.response.headers.has('X-Request-Id')).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /api-docs.json",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('OpenAPI 3.1.0 con bearerAuth', () => { pm.response.to.have.status(200); const body = pm.response.json(); pm.expect(body.openapi).to.eql('3.1.0'); pm.expect(body.components.securitySchemes.bearerAuth.scheme).to.eql('bearer'); pm.expect(body.paths).to.have.property('/api/auth/me'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api-docs.json",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api-docs.json"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login correcto\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data.tokenType).to.eql(\"Bearer\");",
+                  "pm.environment.set(\"userToken\", body.data.accessToken);",
+                  "pm.test('requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.expect(pm.response.headers.has('X-Request-Id')).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"postman.user.a10@example.com\",\n  \"password\": \"Frase segura para clase 2026\"\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /api/auth/me",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Identidad autenticada\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.data.user).to.have.property(\"id\");",
+                  "  pm.expect(body.data.user).to.have.property(\"role\");",
+                  "  pm.expect(body.data.user).to.not.have.property(\"passwordHash\");",
+                  "});",
+                  "pm.test('requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.expect(pm.response.headers.has('X-Request-Id')).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/auth/me (No Auth → 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401 AUTHENTICATION_REQUIRED', () => { pm.response.to.have.status(401); pm.expect(pm.response.json().error.code).to.eql('AUTHENTICATION_REQUIRED'); });",
+                  "pm.test('requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.expect(pm.response.headers.has('X-Request-Id')).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "GET /api/tasks?page=1&limit=10",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Lista paginada protegida\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.data).to.be.an(\"array\");",
+                  "  pm.expect(body.meta.page).to.eql(1);",
+                  "  pm.expect(body.meta.limit).to.eql(10);",
+                  "});",
+                  "pm.test('requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.expect(pm.response.headers.has('X-Request-Id')).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/tasks?page=0 (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 QUERY_VALIDATION_ERROR', () => { pm.response.to.have.status(422); pm.expect(pm.response.json().error.code).to.eql('QUERY_VALIDATION_ERROR'); });",
+                  "pm.test('requestId ' + pm.response.headers.get('X-Request-Id'), () => pm.expect(pm.response.headers.has('X-Request-Id')).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks?page=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/tasks título vacío (422, desafío)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 VALIDATION_ERROR con requestId', () => { pm.response.to.have.status(422); const e = pm.response.json().error; pm.expect(e.code).to.eql('VALIDATION_ERROR'); pm.expect(e.requestId).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"   \"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    }
+  ]
+}

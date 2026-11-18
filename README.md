@@ -1,6 +1,6 @@
 # Task API Express
 
-API REST de gestión de tareas construida con **Express 5**, **TypeScript**, **PNPM** y **Mongoose 8**, conectada de forma segura con **MongoDB Atlas**. En esta versión (**EC2 F2 A7**) el módulo de tareas cubre el CRUD completo sobre MongoDB Atlas mediante `TaskModel` (identificadores `ObjectId` y `timestamps`), con una actualización parcial general `PATCH /api/tasks/:id` que modifica `title`, `status` y `priority` sin sobrescribir los campos que no se envían.
+API REST de gestión de tareas construida con **Express 5**, **TypeScript**, **PNPM** y **Mongoose 8**, conectada de forma segura con **MongoDB Atlas**. Incluye autenticación JWT con roles (EC3 A9–A10), pruebas automatizadas, OpenAPI/Swagger UI y un cliente React (EC3 F2 A11). Desde **EC2 F2 A7** el módulo de tareas cubre el CRUD completo sobre MongoDB Atlas mediante `TaskModel` (identificadores `ObjectId` y `timestamps`), con una actualización parcial general `PATCH /api/tasks/:id` que modifica `title`, `status` y `priority` sin sobrescribir los campos que no se envían.
 
 ## Requisitos
 
@@ -111,7 +111,7 @@ desconocido, repetido o inválido responde `422 QUERY_VALIDATION_ERROR` con `det
 - Las contraseñas se guardan solo como hash bcrypt (12 rondas, `bcryptjs`); `passwordHash` tiene `select: false`.
 - El JWT (`jose`, HS256) contiene únicamente `sub`, `role`, `iss`, `aud`, `iat` y `exp`.
 - Errores: `409 USER_EMAIL_EXISTS`, `422 AUTH_VALIDATION_ERROR`, `401 INVALID_CREDENTIALS` (mismo mensaje para correo inexistente y contraseña incorrecta), `415`, `400 INVALID_JSON`.
-- `GET /api/auth/me` requiere Bearer y devuelve `data.user` (usuario público actual, sin contraseña ni hash). El identificador se obtiene del JWT verificado; si la cuenta ya no existe responde 401 `INVALID_TOKEN`.
+- `GET /api/auth/me` requiere Bearer y devuelve `data.user` (usuario público actual, sin contraseña ni hash). El identificador se obtiene del JWT verificado; si la cuenta ya no existe responde 401 `AUTHENTICATED_USER_NOT_FOUND`.
 
 ### Protección y roles (EC3 F2 A10)
 
@@ -122,8 +122,22 @@ desconocido, repetido o inválido responde `422 QUERY_VALIDATION_ERROR` con `det
 | `DELETE /api/tasks/:id` | No (401) | 403 `FORBIDDEN` | Permitido |
 
 - Enviar `Authorization: Bearer <accessToken>`. Errores: `401 AUTHENTICATION_REQUIRED` (sin encabezado), `401 INVALID_AUTHORIZATION_HEADER` (formato incorrecto), `401 INVALID_TOKEN` (firma, emisor, audiencia o expiración), `403 FORBIDDEN` (rol sin permiso).
-- Controles HTTP: Helmet (cabeceras de seguridad), CORS limitado a `CORS_ORIGIN` y límite de `AUTH_RATE_LIMIT_MAX` solicitudes por IP a `/api/auth` (`429 AUTH_RATE_LIMIT_EXCEEDED`).
+- Controles HTTP: Helmet (cabeceras de seguridad), CORS limitado a `CORS_ORIGIN` y límite de `AUTH_RATE_LIMIT_MAX` solicitudes por IP a `POST /api/auth/register` y `POST /api/auth/login` (`429 AUTH_RATE_LIMIT_EXCEEDED`). Desde A11, `GET /api/auth/me` no consume ese límite.
 - Cambiar el rol de una cuenta (solo desde la terminal, no hay ruta HTTP): `pnpm role:set <correo> <user|admin>`. Después hay que iniciar sesión otra vez para recibir un token con el rol nuevo.
+
+### Calidad, documentación e integración (EC3 F2 A11)
+
+```bash
+pnpm test          # Vitest + SuperTest (servicios reemplazados por dobles, sin Atlas)
+pnpm verify        # check + test + build + client:check + client:build
+pnpm client:dev    # Cliente React en http://localhost:5173 (la API debe estar en :3000)
+```
+
+- **Pruebas:** `tests/api.test.ts` cubre documentación, Helmet, registro, login, `/me`, 401, listado con filtros, creación, 403/204 por rol, 422, CORS y el desafío (título vacío → 422 sin llamar al servicio). Solo `auth.service` y `task.service` son dobles; rutas, middleware, JWT y `errorHandler` son reales.
+- **OpenAPI 3.1:** `src/docs/openapi.ts`, publicado en `GET /api-docs.json`. **Swagger UI** en `http://localhost:3000/api-docs` (botón *Authorize* con el `accessToken`).
+- **Cliente React** (`client/`, Vite + TypeScript): inicia sesión, guarda el token en `sessionStorage` (solución didáctica), consulta `/api/auth/me` y `/api/tasks`, borra la sesión ante 401 y muestra el `requestId` de los errores. Copia `client/.env.example` como `client/.env` (`VITE_API_URL=http://localhost:3000`).
+- **Desafío:** formulario *Nueva tarea* en React (valida título vacío y máximo 120 caracteres, envía `POST /api/tasks` y agrega la tarea sin recargar) con su prueba automatizada.
+- Evidencias: `evidencias/ec3-a11.md`, `evidencias/ec3-a11-reflexion.md`, `evidencias/capturas-a11/` y `postman/Task API EC3 F2 A11.postman_collection.json`.
 
 ### Actualización parcial
 
@@ -190,7 +204,8 @@ src/
 ├── config/database.ts          # Conexión Mongoose a MongoDB Atlas
 ├── services/database.service.ts# Ping a Atlas para /health/database
 ├── services/task.service.ts    # Reglas de tareas y metadatos de paginación (A8)
-├── services/auth.service.ts    # Registro y login (A9)
+├── services/auth.service.ts    # Registro, login (A9) e identidad autenticada /me (A11)
+├── docs/openapi.ts             # Contrato OpenAPI 3.1 (A11)
 ├── services/password.service.ts# Hash y comparación bcrypt (A9)
 ├── services/token.service.ts   # Firma y verificación JWT (A9)
 ├── repositories/               # task.repository (Mongoose, A8) y user.repository (A9)
@@ -218,8 +233,16 @@ postman/
 ├── Task API EC2 F3 A8.postman_collection.json
 ├── Task API EC3 F1 A9.postman_collection.json
 ├── Task API EC3 F2 A10.postman_collection.json
+├── Task API EC3 F2 A11.postman_collection.json
 └── A10 local.postman_environment.json
+tests/
+├── setup-env.ts                     # Entorno de prueba sin secretos reales (A11)
+└── api.test.ts                      # Vitest + SuperTest (A11)
+client/                              # Cliente React + Vite (A11)
 evidencias/
 ├── ec3-a10.md                       # EC3 F2 A10
+├── ec3-a11.md                       # EC3 F2 A11
+├── ec3-a11-reflexion.md
+├── capturas-a11/
 └── capturas/
 ```
