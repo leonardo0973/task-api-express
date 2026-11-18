@@ -26,3 +26,10 @@ entrega-a8-a9/
 
 # Scripts locales de entrega de EC3 F2 A10
 entrega-a10/
+
+# EC3 F2 A11: salidas de pruebas y del cliente React
+dist-test/
+*.tsbuildinfo
+
+# Scripts locales de entrega de EC3 F2 A11
+entrega-a11/
