@@ -21,6 +21,11 @@ const corsOptions: CorsOptions = {
 };
 
 export const securityHeaders = helmet();
+// Solo para /api-docs y /api-docs.json: Swagger UI necesita sus propios
+// scripts y estilos. El resto de la API conserva la CSP completa.
+export const documentationSecurityHeaders = helmet({
+  contentSecurityPolicy: false
+});
 export const corsPolicy = cors(corsOptions);
 
 export const authRateLimiter = rateLimit({
