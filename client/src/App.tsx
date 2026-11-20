@@ -1,15 +1,29 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { ApiHttpError, apiRequest } from './api.js';
-import type {
-  ApiEnvelope,
-  LoginData,
-  Task,
-  TaskListResponse,
-  User
-} from './types.js';
+import { useCallback, useEffect, useState } from 'react';
+import { ApiHttpError } from './api.js';
+import { AuthPanel } from './components/AuthPanel.js';
+import { TaskFilters } from './components/TaskFilters.js';
+import { TaskForm } from './components/TaskForm.js';
+import { TaskList } from './components/TaskList.js';
+import {
+  createTask,
+  deleteTask,
+  getMe,
+  listTasks,
+  login,
+  register,
+  updateTask
+} from './task-api.js';
+import type { PaginationMeta, Task, TaskListQuery, TaskPriority, User } from './types.js';
 
 const TOKEN_KEY = 'task-api.access-token';
-const MAX_TITLE_LENGTH = 120;
+const INITIAL_QUERY: TaskListQuery = {
+  page: 1,
+  limit: 5,
+  status: '',
+  search: '',
+  sortBy: 'createdAt',
+  order: 'desc'
+};
 
 const messageFrom = (error: unknown): string => {
   if (error instanceof ApiHttpError) {
@@ -19,108 +33,145 @@ const messageFrom = (error: unknown): string => {
   return 'No fue posible comunicarse con la API.';
 };
 
+const readStoredToken = (): string | null => {
+  try {
+    return sessionStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+};
+
 export default function App() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [token, setToken] = useState<string | null>(() =>
-    sessionStorage.getItem(TOKEN_KEY)
-  );
+  const [token, setToken] = useState<string | null>(readStoredToken);
   const [user, setUser] = useState<User | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [total, setTotal] = useState(0);
-  const [message, setMessage] = useState('Inicia sesión para consultar tus tareas.');
+  const [meta, setMeta] = useState<PaginationMeta | null>(null);
+  const [query, setQuery] = useState<TaskListQuery>(INITIAL_QUERY);
+  const [message, setMessage] = useState('Inicia sesión o crea una cuenta.');
   const [busy, setBusy] = useState(false);
-
-  // Desafío A11: formulario para crear tareas.
-  const [newTitle, setNewTitle] = useState('');
-  const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
 
   const clearSession = useCallback((): void => {
     sessionStorage.removeItem(TOKEN_KEY);
     setToken(null);
     setUser(null);
     setTasks([]);
-    setTotal(0);
+    setMeta(null);
   }, []);
 
-  const loadProtectedData = useCallback(async (accessToken: string): Promise<void> => {
+  // Coordina el estado ocupado y convierte errores. Un 401 elimina la sesión.
+  const run = useCallback(async (operation: () => Promise<void>): Promise<boolean> => {
+    setBusy(true);
     try {
-      setBusy(true);
-      const [meResponse, taskResponse] = await Promise.all([
-        apiRequest<ApiEnvelope<{ user: User }>>('/api/auth/me', {}, accessToken),
-        apiRequest<TaskListResponse>(
-          '/api/tasks?limit=10&sortBy=createdAt&order=desc',
-          {},
-          accessToken
-        )
-      ]);
-      setUser(meResponse.data.user);
-      setTasks(taskResponse.data);
-      setTotal(taskResponse.meta.total);
-      setMessage(`Se recuperaron ${taskResponse.meta.total} tareas.`);
+      await operation();
+      return true;
     } catch (error: unknown) {
       if (error instanceof ApiHttpError && error.status === 401) clearSession();
       setMessage(messageFrom(error));
+      return false;
     } finally {
       setBusy(false);
     }
   }, [clearSession]);
 
-  useEffect(() => {
-    if (token) void loadProtectedData(token);
-  }, [loadProtectedData, token]);
+  const loadTasks = useCallback(async (
+    accessToken: string,
+    selectedQuery: TaskListQuery
+  ): Promise<void> => {
+    const response = await listTasks(selectedQuery, accessToken);
+    setTasks(response.data);
+    setMeta(response.meta);
+    setMessage(`Se muestran ${response.data.length} de ${response.meta.total} tareas.`);
+  }, []);
 
-  const handleLogin = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
-    event.preventDefault();
-    setBusy(true);
-    setMessage('Comprobando credenciales...');
-    try {
-      const response = await apiRequest<ApiEnvelope<LoginData>>('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password })
-      });
-      sessionStorage.setItem(TOKEN_KEY, response.data.accessToken);
-      setToken(response.data.accessToken);
-      setPassword('');
-    } catch (error: unknown) {
-      setMessage(messageFrom(error));
-      setBusy(false);
-    }
+  const loadSession = useCallback(async (accessToken: string): Promise<void> => {
+    await run(async () => {
+      const me = await getMe(accessToken);
+      setUser(me.data.user);
+      setQuery(INITIAL_QUERY);
+      await loadTasks(accessToken, INITIAL_QUERY);
+    });
+  }, [loadTasks, run]);
+
+  useEffect(() => {
+    if (token) void loadSession(token);
+  }, [loadSession, token]);
+
+  const saveToken = (accessToken: string): void => {
+    sessionStorage.setItem(TOKEN_KEY, accessToken);
+    setToken(accessToken);
   };
 
-  const handleCreateTask = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
-    event.preventDefault();
-    const title = newTitle.trim();
-    if (!title) {
-      setCreateError('Escribe un título para la tarea.');
-      return;
-    }
-    if (title.length > MAX_TITLE_LENGTH) {
-      setCreateError(`El título no debe superar ${MAX_TITLE_LENGTH} caracteres.`);
-      return;
-    }
-    if (!token) return;
+  const handleLogin = async (email: string, password: string): Promise<void> => {
+    await run(async () => {
+      const response = await login(email, password);
+      saveToken(response.data.accessToken);
+      setMessage('Sesión iniciada correctamente.');
+    });
+  };
 
-    setCreating(true);
-    setCreateError(null);
-    try {
-      const response = await apiRequest<ApiEnvelope<Task>>(
-        '/api/tasks',
-        { method: 'POST', body: JSON.stringify({ title }) },
-        token
-      );
-      // Respuesta 201: la tarea nueva aparece primero sin recargar la página.
-      setTasks((current) => [response.data, ...current].slice(0, 10));
-      setTotal((current) => current + 1);
-      setNewTitle('');
-      setMessage(`Se creó la tarea "${response.data.title}".`);
-    } catch (error: unknown) {
-      if (error instanceof ApiHttpError && error.status === 401) clearSession();
-      setCreateError(messageFrom(error));
-    } finally {
-      setCreating(false);
-    }
+  // El registro se completa con un login inmediato para obtener el token.
+  const handleRegister = async (
+    name: string,
+    email: string,
+    password: string
+  ): Promise<void> => {
+    await run(async () => {
+      await register(name, email, password);
+      const response = await login(email, password);
+      saveToken(response.data.accessToken);
+      setMessage('Cuenta creada. La sesión quedó iniciada.');
+    });
+  };
+
+  const refresh = async (selectedQuery: TaskListQuery = query): Promise<void> => {
+    if (!token) return;
+    await run(() => loadTasks(token, selectedQuery));
+  };
+
+  // Después de cada cambio se vuelve a consultar el servidor.
+  const handleCreate = async (title: string, priority: TaskPriority): Promise<boolean> => {
+    if (!token) return false;
+    return run(async () => {
+      await createTask({ title, priority }, token);
+      const firstPage = { ...query, page: 1 };
+      setQuery(firstPage);
+      await loadTasks(token, firstPage);
+      setMessage(`Se creó la tarea "${title}".`);
+    });
+  };
+
+  const handleRename = async (task: Task, title: string): Promise<void> => {
+    if (!token) return;
+    await run(async () => {
+      await updateTask(task.id, { title }, token);
+      await loadTasks(token, query);
+      setMessage('El título se actualizó correctamente.');
+    });
+  };
+
+  const handleToggle = async (task: Task): Promise<void> => {
+    if (!token) return;
+    await run(async () => {
+      const status = task.status === 'pending' ? 'completed' : 'pending';
+      await updateTask(task.id, { status }, token);
+      await loadTasks(token, query);
+      setMessage('El estado se actualizó correctamente.');
+    });
+  };
+
+  const handleDelete = async (task: Task): Promise<void> => {
+    if (!token || !window.confirm(`¿Eliminar la tarea "${task.title}"?`)) return;
+    await run(async () => {
+      await deleteTask(task.id, token);
+      await loadTasks(token, query);
+      setMessage('La tarea se eliminó correctamente.');
+    });
+  };
+
+  const changePage = async (page: number): Promise<void> => {
+    const next = { ...query, page };
+    setQuery(next);
+    await refresh(next);
   };
 
   const handleLogout = (): void => {
@@ -132,111 +183,69 @@ export default function App() {
     <main className="page-shell">
       <header className="page-header">
         <div>
-          <p className="eyebrow">EC3 F2 A11</p>
+          <p className="eyebrow">EC3 F3 A12</p>
           <h1>Task API Client</h1>
-          <p>Integración inicial de React con una API protegida por JWT.</p>
+          <p>Cliente CRUD integrado con la API de producción.</p>
         </div>
         {user && <button onClick={handleLogout}>Cerrar sesión</button>}
       </header>
 
       {!token ? (
-        <section className="panel login-panel" aria-labelledby="login-title">
-          <h2 id="login-title">Iniciar sesión</h2>
-          <form onSubmit={(event) => void handleLogin(event)}>
-            <label htmlFor="email">Correo electrónico</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              autoComplete="username"
-              required
-            />
-            <label htmlFor="password">Contraseña</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="current-password"
-              required
-            />
-            <button type="submit" disabled={busy}>
-              {busy ? 'Ingresando...' : 'Ingresar'}
-            </button>
-          </form>
-        </section>
+        <AuthPanel busy={busy} onLogin={handleLogin} onRegister={handleRegister} />
       ) : (
-        <section className="workspace" aria-busy={busy}>
+        <section aria-busy={busy}>
           <article className="panel identity-panel">
-            <h2>Identidad autenticada</h2>
-            {user ? (
-              <dl>
-                <div><dt>Nombre</dt><dd>{user.name}</dd></div>
-                <div><dt>Correo</dt><dd>{user.email}</dd></div>
-                <div><dt>Rol</dt><dd>{user.role}</dd></div>
-              </dl>
-            ) : <p>Validando el token...</p>}
+            <div>
+              <h2>{user ? `Hola, ${user.name}` : 'Validando tu sesión...'}</h2>
+              {user && <p>{user.email} · rol <strong>{user.role}</strong></p>}
+            </div>
+            <button className="secondary" onClick={() => void refresh()} disabled={busy}>
+              Actualizar
+            </button>
           </article>
 
           <article className="panel">
-            <div className="section-heading">
-              <h2>Tareas recuperadas</h2>
-              <button
-                onClick={() => token && void loadProtectedData(token)}
-                disabled={busy}
-              >
-                Actualizar
-              </button>
-            </div>
-
-            <form
-              className="create-task"
-              onSubmit={(event) => void handleCreateTask(event)}
-              noValidate
-            >
-              <label htmlFor="new-title">Nueva tarea</label>
-              <div className="create-task-row">
-                <input
-                  id="new-title"
-                  type="text"
-                  value={newTitle}
-                  maxLength={MAX_TITLE_LENGTH}
-                  placeholder="Por ejemplo: Documentar la API"
-                  onChange={(event) => {
-                    setNewTitle(event.target.value);
-                    if (createError) setCreateError(null);
-                  }}
-                  aria-invalid={createError !== null}
-                  aria-describedby={createError ? 'create-error' : undefined}
-                />
-                <button type="submit" disabled={creating || busy}>
-                  {creating ? 'Creando...' : 'Crear'}
+            <h2>Gestionar tareas</h2>
+            <TaskForm busy={busy} onCreate={handleCreate} />
+            <hr />
+            <TaskFilters
+              value={query}
+              busy={busy}
+              onChange={setQuery}
+              onApply={() => refresh()}
+            />
+            <TaskList
+              tasks={tasks}
+              canDelete={user?.role === 'admin'}
+              busy={busy}
+              onRename={handleRename}
+              onToggle={handleToggle}
+              onDelete={handleDelete}
+            />
+            {meta && (
+              <nav className="pagination" aria-label="Paginación de tareas">
+                <button
+                  className="secondary"
+                  disabled={busy || !meta.hasPreviousPage}
+                  onClick={() => void changePage(meta.page - 1)}
+                >
+                  Anterior
                 </button>
-              </div>
-              {createError && (
-                <p id="create-error" className="form-error" role="alert">{createError}</p>
-              )}
-            </form>
-
-            {tasks.length === 0 ? (
-              <p>No hay tareas para mostrar.</p>
-            ) : (
-              <ul className="task-list">
-                {tasks.map((task) => (
-                  <li key={task.id}>
-                    <span>{task.title}</span>
-                    <strong>{task.status}</strong>
-                  </li>
-                ))}
-              </ul>
+                <span>Página {meta.page} de {Math.max(meta.totalPages, 1)} · {meta.total} tareas</span>
+                <button
+                  className="secondary"
+                  disabled={busy || !meta.hasNextPage}
+                  onClick={() => void changePage(meta.page + 1)}
+                >
+                  Siguiente
+                </button>
+              </nav>
             )}
-            <p className="task-total">Total en la API: {total}</p>
           </article>
         </section>
       )}
 
-      <p className="status-message" role="status">{message}</p>
+      <p className="status-message" role="status" aria-live="polite">{message}</p>
     </main>
   );
 }

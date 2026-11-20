@@ -1,6 +1,7 @@
 import type { ApiErrorData } from './types.js';
 
-const API_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:3000').replace(
+// URL pública de la API: VITE_API_URL se incorpora al bundle durante el build.
+export const API_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:3000').replace(
   /\/$/,
   ''
 );
@@ -68,6 +69,9 @@ export const apiRequest = async <T>(
       `La solicitud terminó con el código ${response.status}.`
     );
   }
+
+  // 204 No Content (DELETE): no hay cuerpo que analizar.
+  if (response.status === 204) return undefined as T;
 
   return payload as T;
 };
