@@ -10,7 +10,8 @@ services:
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
     startCommand: pnpm start
     healthCheckPath: /health/database
-    maxShutdownDelaySeconds: 30
+    # El plan free no admite maxShutdownDelaySeconds; el cierre ordenado con
+    # SIGTERM sigue en src/lifecycle/graceful-shutdown.ts.
     envVars:
       - key: NODE_VERSION
         value: 24.19.0
