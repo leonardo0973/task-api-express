@@ -4,6 +4,15 @@ Todas las versiones de task-api-express. El formato sigue
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y la numeración
 [Versionado Semántico](https://semver.org/lang/es/).
 
+## [Unreleased]
+
+### Agregado
+
+- Desafío A12: vista de detalle de tarea con React Router (`/tasks/:id`). Consulta `GET /api/tasks/:id` con el token Bearer, muestra carga, tarea encontrada, 401 (cierra la sesión) y 404, e incluye un enlace para volver a la lista.
+- Enlace "Ver detalle" en cada tarea de la lista.
+- Tres pruebas del comportamiento nuevo en `client/tests/task-detail.test.ts`.
+- La reescritura SPA de `render.yaml` (`/*` → `/index.html`) permite recargar `/tasks/:id` sin 404.
+
 ## [1.0.0] - 2026-11-19
 
 ### Agregado

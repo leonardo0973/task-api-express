@@ -84,6 +84,12 @@ hr { margin: 1.5rem 0; border: 0; border-top: 1px solid #dce4ed; }
 .badge.priority-high { color: #8a2a2a; background: #fbe3e3; }
 .task-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .pagination { justify-content: center; }
+.detail-link, .back-link { align-self: center; color: #1f4f7a; font-weight: 700; }
+.back-link { display: inline-block; margin-bottom: 1rem; }
+.detail-list { display: grid; gap: 0.6rem; margin: 0; }
+.detail-list div { display: grid; grid-template-columns: 9rem 1fr; gap: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid #dce4ed; }
+.detail-list dt { color: #607084; font-weight: 700; }
+.detail-list dd { margin: 0; overflow-wrap: anywhere; }
 .status-message { min-height: 1.5rem; color: #455568; }
 
 @media (max-width: 820px) {

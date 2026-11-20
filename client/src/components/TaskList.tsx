@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import type { Task } from '../types.js';
 
 const PRIORITY_LABEL: Record<Task['priority'], string> = {
@@ -40,6 +41,7 @@ function TaskRow({ task, canDelete, busy, onRename, onToggle, onDelete }: TaskRo
         </span>
       </div>
       <div className="task-actions">
+        <Link className="detail-link" to={`/tasks/${task.id}`}>Ver detalle</Link>
         <button
           type="button"
           className="secondary"

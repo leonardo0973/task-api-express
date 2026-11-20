@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link, Route, Routes } from 'react-router';
 import { ApiHttpError } from './api.js';
 import { AuthPanel } from './components/AuthPanel.js';
 import { TaskFilters } from './components/TaskFilters.js';
 import { TaskForm } from './components/TaskForm.js';
+import { TaskDetail } from './components/TaskDetail.js';
 import { TaskList } from './components/TaskList.js';
 import {
   createTask,
@@ -91,6 +93,12 @@ export default function App() {
       await loadTasks(accessToken, INITIAL_QUERY);
     });
   }, [loadTasks, run]);
+
+  // Desafío: la vista de detalle informa un 401 y la sesión se elimina.
+  const handleUnauthorized = useCallback((detail: string): void => {
+    clearSession();
+    setMessage(detail);
+  }, [clearSession]);
 
   useEffect(() => {
     if (token) void loadSession(token);
@@ -193,56 +201,76 @@ export default function App() {
       {!token ? (
         <AuthPanel busy={busy} onLogin={handleLogin} onRegister={handleRegister} />
       ) : (
-        <section aria-busy={busy}>
-          <article className="panel identity-panel">
-            <div>
-              <h2>{user ? `Hola, ${user.name}` : 'Validando tu sesión...'}</h2>
-              {user && <p>{user.email} · rol <strong>{user.role}</strong></p>}
-            </div>
-            <button className="secondary" onClick={() => void refresh()} disabled={busy}>
-              Actualizar
-            </button>
-          </article>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <section aria-busy={busy}>
+                <article className="panel identity-panel">
+                  <div>
+                    <h2>{user ? `Hola, ${user.name}` : 'Validando tu sesión...'}</h2>
+                    {user && <p>{user.email} · rol <strong>{user.role}</strong></p>}
+                  </div>
+                  <button className="secondary" onClick={() => void refresh()} disabled={busy}>
+                    Actualizar
+                  </button>
+                </article>
 
-          <article className="panel">
-            <h2>Gestionar tareas</h2>
-            <TaskForm busy={busy} onCreate={handleCreate} />
-            <hr />
-            <TaskFilters
-              value={query}
-              busy={busy}
-              onChange={setQuery}
-              onApply={() => refresh()}
-            />
-            <TaskList
-              tasks={tasks}
-              canDelete={user?.role === 'admin'}
-              busy={busy}
-              onRename={handleRename}
-              onToggle={handleToggle}
-              onDelete={handleDelete}
-            />
-            {meta && (
-              <nav className="pagination" aria-label="Paginación de tareas">
-                <button
-                  className="secondary"
-                  disabled={busy || !meta.hasPreviousPage}
-                  onClick={() => void changePage(meta.page - 1)}
-                >
-                  Anterior
-                </button>
-                <span>Página {meta.page} de {Math.max(meta.totalPages, 1)} · {meta.total} tareas</span>
-                <button
-                  className="secondary"
-                  disabled={busy || !meta.hasNextPage}
-                  onClick={() => void changePage(meta.page + 1)}
-                >
-                  Siguiente
-                </button>
-              </nav>
-            )}
-          </article>
-        </section>
+                <article className="panel">
+                  <h2>Gestionar tareas</h2>
+                  <TaskForm busy={busy} onCreate={handleCreate} />
+                  <hr />
+                  <TaskFilters
+                    value={query}
+                    busy={busy}
+                    onChange={setQuery}
+                    onApply={() => refresh()}
+                  />
+                  <TaskList
+                    tasks={tasks}
+                    canDelete={user?.role === 'admin'}
+                    busy={busy}
+                    onRename={handleRename}
+                    onToggle={handleToggle}
+                    onDelete={handleDelete}
+                  />
+                  {meta && (
+                    <nav className="pagination" aria-label="Paginación de tareas">
+                      <button
+                        className="secondary"
+                        disabled={busy || !meta.hasPreviousPage}
+                        onClick={() => void changePage(meta.page - 1)}
+                      >
+                        Anterior
+                      </button>
+                      <span>Página {meta.page} de {Math.max(meta.totalPages, 1)} · {meta.total} tareas</span>
+                      <button
+                        className="secondary"
+                        disabled={busy || !meta.hasNextPage}
+                        onClick={() => void changePage(meta.page + 1)}
+                      >
+                        Siguiente
+                      </button>
+                    </nav>
+                  )}
+                </article>
+              </section>
+            }
+          />
+          <Route
+            path="/tasks/:id"
+            element={<TaskDetail token={token} onUnauthorized={handleUnauthorized} />}
+          />
+          <Route
+            path="*"
+            element={
+              <article className="panel">
+                <h2>Página no encontrada</h2>
+                <Link to="/">Volver a la lista</Link>
+              </article>
+            }
+          />
+        </Routes>
       )}
 
       <p className="status-message" role="status" aria-live="polite">{message}</p>
