@@ -143,6 +143,7 @@ pnpm client:dev      # React en http://localhost:5173
 - **Cliente React CRUD** (`client/src/components`): registro, login, crear (con prioridad), listar, buscar, filtrar por estado, ordenar, paginar, editar título, completar o reabrir y eliminar (el botón solo aparece para `admin`; Express sigue respondiendo 403 a un `user`).
 - **Producción**: la API escucha en `0.0.0.0:$PORT`, declara `trust proxy` con `TRUST_PROXY_HOPS` y publica versión y ambiente en `/health`.
 - **Render**: `render.yaml` define el servicio Node `task-api-express-leonardo0973` y el sitio estático `task-client-react-leonardo0973` (con reescritura SPA). Las variables `sync: false` (`PUBLIC_API_URL`, `MONGODB_URI`, `CORS_ORIGIN`, `VITE_API_URL`) se capturan en Render y `JWT_SECRET` se genera allí.
+- **Desafío (sin liberar)**: vista `/tasks/:id` con React Router; ver `CHANGELOG.md` → *Unreleased*.
 - **Liberación**: `CHANGELOG.md`, `docs/release-checklist.md`, `docs/evidencias-a12.md`, `docs/reflexion-a12.md` y la etiqueta `v1.0.0`.
 
 ### Calidad, documentación e integración (EC3 F2 A11)
