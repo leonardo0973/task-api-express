@@ -1,0 +1,59 @@
+# Blueprint de Render para la liberación 1.0.0 de task-api-express.
+# No contiene secretos: sync: false pide el valor al crear el Blueprint y
+# generateValue crea JWT_SECRET en Render sin escribirlo en Git.
+services:
+  - type: web
+    name: task-api-express-leonardo0973
+    runtime: node
+    plan: free
+    branch: ec3-a12-despliegue-liberacion
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    startCommand: pnpm start
+    healthCheckPath: /health/database
+    maxShutdownDelaySeconds: 30
+    envVars:
+      - key: NODE_VERSION
+        value: 24.19.0
+      - key: NODE_ENV
+        value: production
+      - key: APP_VERSION
+        value: 1.0.0
+      - key: PUBLIC_API_URL
+        sync: false
+      - key: TRUST_PROXY_HOPS
+        value: 1
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB_NAME
+        value: task_api
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 1h
+      - key: JWT_ISSUER
+        value: task-api-express
+      - key: JWT_AUDIENCE
+        value: task-api-client
+      - key: CORS_ORIGIN
+        sync: false
+      - key: AUTH_RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: AUTH_RATE_LIMIT_MAX
+        value: 10
+
+  - type: web
+    name: task-client-react-leonardo0973
+    runtime: static
+    branch: ec3-a12-despliegue-liberacion
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm client:build
+    staticPublishPath: ./client/dist
+    envVars:
+      - key: NODE_VERSION
+        value: 24.19.0
+      - key: VITE_API_URL
+        sync: false
+    routes:
+      # Reescritura SPA: cualquier ruta del sitio carga index.html para React.
+      - type: rewrite
+        source: /*
+        destination: /index.html

@@ -1,6 +1,6 @@
 # Task API Express
 
-API REST de gestión de tareas construida con **Express 5**, **TypeScript**, **PNPM** y **Mongoose 8**, conectada de forma segura con **MongoDB Atlas**. Incluye autenticación JWT con roles (EC3 A9–A10), pruebas automatizadas, OpenAPI/Swagger UI y un cliente React (EC3 F2 A11). Desde **EC2 F2 A7** el módulo de tareas cubre el CRUD completo sobre MongoDB Atlas mediante `TaskModel` (identificadores `ObjectId` y `timestamps`), con una actualización parcial general `PATCH /api/tasks/:id` que modifica `title`, `status` y `priority` sin sobrescribir los campos que no se envían.
+API REST de gestión de tareas construida con **Express 5**, **TypeScript**, **PNPM** y **Mongoose 8**, conectada de forma segura con **MongoDB Atlas**. Incluye autenticación JWT con roles (EC3 A9–A10), pruebas automatizadas, OpenAPI/Swagger UI y un cliente React (EC3 F2 A11), y la liberación **1.0.0** desplegada en Render con un cliente CRUD completo (EC3 F3 A12). Desde **EC2 F2 A7** el módulo de tareas cubre el CRUD completo sobre MongoDB Atlas mediante `TaskModel` (identificadores `ObjectId` y `timestamps`), con una actualización parcial general `PATCH /api/tasks/:id` que modifica `title`, `status` y `priority` sin sobrescribir los campos que no se envían.
 
 ## Requisitos
 
@@ -15,7 +15,11 @@ Copia `.env.example` como `.env` y completa los valores. **`.env` nunca se sube 
 
 | Variable | Obligatoria | Descripción |
 |---|---|---|
-| `PORT` | No (3000) | Puerto HTTP de la API. Entero entre 1 y 65535. |
+| `NODE_ENV` | No (`development`) | `development`, `test` o `production`. |
+| `APP_VERSION` | No (`1.0.0`) | Versión publicada en `/health` y en OpenAPI. |
+| `PORT` | No (3000) | Puerto HTTP de la API. Entero entre 1 y 65535. Render lo asigna. |
+| `PUBLIC_API_URL` | Sí | URL pública de la API sin diagonal final (`http://localhost:3000` en local, HTTPS en Render). La usa Swagger UI. |
+| `TRUST_PROXY_HOPS` | No (`0`) | Saltos de proxy de confianza: `0` en local, `1` detrás del proxy de Render. |
 | `MONGODB_URI` | Sí | Cadena `mongodb+srv://` del clúster de Atlas con el usuario exclusivo de la API. |
 | `MONGODB_DB_NAME` | Sí | Base de datos de la API: `task_api`. |
 | `JWT_SECRET` | Sí | Clave aleatoria de al menos 32 bytes para firmar los JWT (HS256). |
@@ -70,8 +74,8 @@ no abre el puerto y termina con código 1 mostrando un mensaje seguro.
 
 | Método | Ruta | Respuesta |
 |---|---|---|
-| GET | `/health` | `200 { "status": "ok" }` — el proceso está activo. |
-| GET | `/health/database` | `200` con `ping`, base de datos y latencia; `503 DATABASE_UNAVAILABLE` si MongoDB no responde. |
+| GET | `/health` | `200 { "data": { "status": "up", "version": "1.0.0", "environment": "production" } }` — el proceso está activo (A12). |
+| GET | `/health/database` | `200 { "data": { "status": "up", ... } }` con ping, base de datos y latencia; `503 { "data": { "status": "down" } }` si MongoDB no responde. Render lo usa como health check. |
 
 ### Tareas (Persistentes en MongoDB Atlas)
 
@@ -124,6 +128,22 @@ desconocido, repetido o inválido responde `422 QUERY_VALIDATION_ERROR` con `det
 - Enviar `Authorization: Bearer <accessToken>`. Errores: `401 AUTHENTICATION_REQUIRED` (sin encabezado), `401 INVALID_AUTHORIZATION_HEADER` (formato incorrecto), `401 INVALID_TOKEN` (firma, emisor, audiencia o expiración), `403 FORBIDDEN` (rol sin permiso).
 - Controles HTTP: Helmet (cabeceras de seguridad), CORS limitado a `CORS_ORIGIN` y límite de `AUTH_RATE_LIMIT_MAX` solicitudes por IP a `POST /api/auth/register` y `POST /api/auth/login` (`429 AUTH_RATE_LIMIT_EXCEEDED`). Desde A11, `GET /api/auth/me` no consume ese límite.
 - Cambiar el rol de una cuenta (solo desde la terminal, no hay ruta HTTP): `pnpm role:set <correo> <user|admin>`. Después hay que iniciar sesión otra vez para recibir un token con el rol nuevo.
+
+### Integración, despliegue y liberación (EC3 F3 A12)
+
+```bash
+pnpm install --frozen-lockfile
+pnpm verify          # tipos, 7 pruebas backend, 3 pruebas cliente y ambos builds
+pnpm dev             # API en http://localhost:3000 (Swagger en /api-docs)
+pnpm client:dev      # React en http://localhost:5173
+# Después del despliegue (PowerShell):
+#   $env:API_URL='https://...'; $env:USER_EMAIL='...'; $env:USER_PASSWORD='...'; pnpm smoke:release
+```
+
+- **Cliente React CRUD** (`client/src/components`): registro, login, crear (con prioridad), listar, buscar, filtrar por estado, ordenar, paginar, editar título, completar o reabrir y eliminar (el botón solo aparece para `admin`; Express sigue respondiendo 403 a un `user`).
+- **Producción**: la API escucha en `0.0.0.0:$PORT`, declara `trust proxy` con `TRUST_PROXY_HOPS` y publica versión y ambiente en `/health`.
+- **Render**: `render.yaml` define el servicio Node `task-api-express-leonardo0973` y el sitio estático `task-client-react-leonardo0973` (con reescritura SPA). Las variables `sync: false` (`PUBLIC_API_URL`, `MONGODB_URI`, `CORS_ORIGIN`, `VITE_API_URL`) se capturan en Render y `JWT_SECRET` se genera allí.
+- **Liberación**: `CHANGELOG.md`, `docs/release-checklist.md`, `docs/evidencias-a12.md`, `docs/reflexion-a12.md` y la etiqueta `v1.0.0`.
 
 ### Calidad, documentación e integración (EC3 F2 A11)
 
@@ -198,7 +218,7 @@ Al recibir `SIGINT` (Ctrl+C) o `SIGTERM` la API:
 
 ```
 src/
-├── app.ts                      # Configuración de Express
+├── app.ts                      # Configuración de Express (trust proxy en A12)
 ├── server.ts                   # Valida entorno → conecta Atlas → abre puerto
 ├── config/env.ts               # Validación de variables de entorno
 ├── config/database.ts          # Conexión Mongoose a MongoDB Atlas
