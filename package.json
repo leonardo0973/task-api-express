@@ -14,10 +14,12 @@
     "client:dev": "pnpm --dir client dev",
     "client:check": "pnpm --dir client check",
     "client:build": "pnpm --dir client build",
-    "verify": "pnpm check && pnpm test && pnpm build && pnpm client:check && pnpm client:build"
+    "client:test": "pnpm --dir client test",
+    "smoke:release": "node scripts/smoke-release.mjs",
+    "verify": "pnpm check && pnpm test && pnpm build && pnpm client:check && pnpm client:test && pnpm client:build"
   },
   "engines": {
-    "node": ">=20.19.0"
+    "node": ">=20.19.0 <25"
   },
   "dependencies": {
     "bcryptjs": "3.0.3",
@@ -40,5 +42,6 @@
     "tsx": "^4.23.15",
     "typescript": "~5.9.3",
     "vitest": "5.0.4"
-  }
+  },
+  "packageManager": "pnpm@11.24.0"
 }

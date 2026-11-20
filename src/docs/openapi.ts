@@ -1,5 +1,9 @@
 // Contrato OpenAPI 3.1 de task-api-express. Describe el comportamiento real
 // de middleware, controladores y AppError; no ejecuta validación.
+// La versión y el servidor salen del ambiente para que Swagger UI pruebe
+// contra el host actual (localhost en desarrollo, Render en producción).
+import { env } from '../config/env.js';
+
 const json = (schema: Record<string, unknown>) => ({
   'application/json': { schema }
 });
@@ -18,11 +22,16 @@ export const openApiDocument: Record<string, unknown> = {
   openapi: '3.1.0',
   info: {
     title: 'Task API Express',
-    version: '1.0.0',
+    version: env.APP_VERSION,
     description:
       'API REST para gestionar tareas con autenticación JWT y autorización por roles.'
   },
-  servers: [{ url: 'http://localhost:3000', description: 'Entorno local' }],
+  servers: [
+    {
+      url: env.PUBLIC_API_URL,
+      description: env.NODE_ENV === 'production' ? 'Entorno de producción' : 'Entorno local'
+    }
+  ],
   tags: [
     { name: 'Health', description: 'Comprobación del servicio' },
     { name: 'Auth', description: 'Registro, acceso e identidad autenticada' },
@@ -38,8 +47,21 @@ export const openApiDocument: Record<string, unknown> = {
             description: 'Servicio disponible',
             content: json({
               type: 'object',
-              required: ['status'],
-              properties: { status: { type: 'string', const: 'ok' } }
+              required: ['data'],
+              properties: {
+                data: {
+                  type: 'object',
+                  required: ['status', 'version', 'environment'],
+                  properties: {
+                    status: { type: 'string', const: 'up' },
+                    version: { type: 'string', example: '1.0.0' },
+                    environment: {
+                      type: 'string',
+                      enum: ['development', 'test', 'production']
+                    }
+                  }
+                }
+              }
             })
           }
         }
@@ -60,7 +82,7 @@ export const openApiDocument: Record<string, unknown> = {
                   type: 'object',
                   required: ['status', 'database', 'ping', 'latencyMs'],
                   properties: {
-                    status: { type: 'string', const: 'ok' },
+                    status: { type: 'string', const: 'up' },
                     database: { type: 'string', example: 'task_api' },
                     ping: { type: 'string', const: 'ok' },
                     latencyMs: { type: 'integer', example: 42 }
@@ -69,7 +91,20 @@ export const openApiDocument: Record<string, unknown> = {
               }
             })
           },
-          '503': response('DatabaseUnavailable')
+          '503': {
+            description: 'Base de datos no disponible',
+            content: json({
+              type: 'object',
+              required: ['data'],
+              properties: {
+                data: {
+                  type: 'object',
+                  required: ['status'],
+                  properties: { status: { type: 'string', const: 'down' } }
+                }
+              }
+            })
+          }
         }
       }
     },

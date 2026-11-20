@@ -1,23 +1,12 @@
 import mongoose from 'mongoose';
 import { isDatabaseConnected } from '../config/database.js';
-import { AppError } from '../errors/app-error.js';
 import { describeDatabaseError } from '../errors/database-error.js';
 
-export interface DatabaseHealth {
-  status: 'ok';
-  database: string;
-  ping: 'ok';
-  latencyMs: number;
-}
+export type DatabaseHealth =
+  | { status: 'up'; database: string; ping: 'ok'; latencyMs: number }
+  | { status: 'down' };
 
 const PING_TIMEOUT_MS = 3000;
-
-const unavailable = (): AppError =>
-  new AppError(
-    'La base de datos no está disponible en este momento.',
-    503,
-    'DATABASE_UNAVAILABLE'
-  );
 
 const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> =>
   new Promise<T>((resolve, reject) => {
@@ -32,7 +21,7 @@ export const checkDatabaseHealth = async (): Promise<DatabaseHealth> => {
   const db = mongoose.connection.db;
 
   if (!isDatabaseConnected() || !db) {
-    throw unavailable();
+    return { status: 'down' };
   }
 
   const startedAt = performance.now();
@@ -41,11 +30,11 @@ export const checkDatabaseHealth = async (): Promise<DatabaseHealth> => {
     await withTimeout(db.command({ ping: 1 }), PING_TIMEOUT_MS);
   } catch (error: unknown) {
     console.error(`[mongodb] Ping fallido: ${describeDatabaseError(error)}`);
-    throw unavailable();
+    return { status: 'down' };
   }
 
   return {
-    status: 'ok',
+    status: 'up',
     database: db.databaseName,
     ping: 'ok',
     latencyMs: Math.round(performance.now() - startedAt)

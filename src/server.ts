@@ -30,8 +30,11 @@ const start = async (): Promise<void> => {
     process.exit(1);
   });
 
-  server.listen(env.PORT, () => {
-    console.log(`[server] API disponible en http://localhost:${env.PORT}`);
+  // 0.0.0.0 acepta conexiones de la red del contenedor (proxy de Render).
+  server.listen(env.PORT, '0.0.0.0', () => {
+    console.log(
+      `[server] API ${env.APP_VERSION} (${env.NODE_ENV}) escuchando en el puerto ${env.PORT}; URL pública ${env.PUBLIC_API_URL}`
+    );
   });
 
   registerGracefulShutdown(server);

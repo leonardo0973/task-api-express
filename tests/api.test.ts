@@ -91,13 +91,17 @@ beforeEach(async () => {
 describe('documentación y controles HTTP', () => {
   it('publica OpenAPI, Swagger UI y encabezados de seguridad', async () => {
     const health = await request(app).get('/health').expect(200);
-    expect(health.body.status).toBe('ok');
+    expect(health.body.data.status).toBe('up');
+    expect(health.body.data.version).toBe('1.0.0-test');
+    expect(health.body.data.environment).toBe('test');
     expect(health.headers['x-powered-by']).toBeUndefined();
     expect(health.headers['x-content-type-options']).toBe('nosniff');
     expect(typeof health.headers['x-request-id']).toBe('string');
 
     const specification = await request(app).get('/api-docs.json').expect(200);
     expect(specification.body.openapi).toBe('3.1.0');
+    expect(specification.body.info.version).toBe('1.0.0-test');
+    expect(specification.body.servers[0].url).toBe('http://localhost:3000');
     expect(specification.body.paths['/api/auth/me']).toBeDefined();
     expect(specification.body.components.securitySchemes.bearerAuth.scheme).toBe('bearer');
 

@@ -2,8 +2,14 @@
 // Los mensajes indican el nombre de la variable, pero nunca imprimen su valor.
 import 'dotenv/config';
 
+export type AppEnvironment = 'development' | 'test' | 'production';
+
 export interface AppEnv {
+  NODE_ENV: AppEnvironment;
+  APP_VERSION: string;
   PORT: number;
+  PUBLIC_API_URL: string;
+  TRUST_PROXY_HOPS: number;
   MONGODB_URI: string;
   MONGODB_DB_NAME: string;
   JWT_SECRET: string;
@@ -43,8 +49,58 @@ const parsePositiveInteger = (
   return value;
 };
 
+// Acepta cero (sin proxy en local); rechaza negativos, decimales y texto.
+const parseNonNegativeInteger = (
+  source: NodeJS.ProcessEnv,
+  name: string,
+  fallback: string,
+  issues: string[]
+): number => {
+  const raw = source[name]?.trim() || fallback;
+  const value = Number(raw);
+  if (!/^\d+$/.test(raw) || !Number.isInteger(value) || value < 0) {
+    issues.push(`${name} debe ser un número entero mayor o igual que cero.`);
+  }
+  return value;
+};
+
+const ENVIRONMENTS: readonly AppEnvironment[] = ['development', 'test', 'production'];
+
+const isEnvironment = (value: string): value is AppEnvironment =>
+  ENVIRONMENTS.some((environment) => environment === value);
+
+// URL absoluta http o https; se guarda sin diagonal final.
+const parseHttpUrl = (
+  source: NodeJS.ProcessEnv,
+  name: string,
+  issues: string[]
+): string => {
+  const value = (source[name]?.trim() ?? '').replace(/\/+$/, '');
+  if (!value) {
+    issues.push(`Falta la variable de entorno ${name}.`);
+    return value;
+  }
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      issues.push(`${name} debe utilizar http o https.`);
+    }
+  } catch {
+    issues.push(`${name} debe ser una URL absoluta válida.`);
+  }
+  return value;
+};
+
 export const loadEnv = (source: NodeJS.ProcessEnv = process.env): AppEnv => {
   const issues: string[] = [];
+
+  const nodeEnv = source.NODE_ENV?.trim() || 'development';
+  if (!isEnvironment(nodeEnv)) {
+    issues.push('NODE_ENV debe ser development, test o production.');
+  }
+  const appVersion = source.APP_VERSION?.trim() || '1.0.0';
+  const publicApiUrl = parseHttpUrl(source, 'PUBLIC_API_URL', issues);
+  const trustProxyHops = parseNonNegativeInteger(source, 'TRUST_PROXY_HOPS', '0', issues);
 
   const port = Number(source.PORT?.trim() || '3000');
   if (!Number.isInteger(port) || port < 1 || port > 65_535) {
@@ -81,7 +137,7 @@ export const loadEnv = (source: NodeJS.ProcessEnv = process.env): AppEnv => {
     issues.push('JWT_EXPIRES_IN debe usar un formato como 15m, 1h o 7d.');
   }
 
-  const corsOrigin = source.CORS_ORIGIN?.trim() ?? '';
+  const corsOrigin = (source.CORS_ORIGIN?.trim() ?? '').replace(/\/+$/, '');
   if (!corsOrigin) {
     issues.push('Falta la variable de entorno CORS_ORIGIN.');
   } else if (corsOrigin === '*' || !ORIGIN_PATTERN.test(corsOrigin)) {
@@ -96,7 +152,11 @@ export const loadEnv = (source: NodeJS.ProcessEnv = process.env): AppEnv => {
   }
 
   return Object.freeze({
+    NODE_ENV: isEnvironment(nodeEnv) ? nodeEnv : 'development',
+    APP_VERSION: appVersion,
     PORT: port,
+    PUBLIC_API_URL: publicApiUrl,
+    TRUST_PROXY_HOPS: trustProxyHops,
     MONGODB_URI: mongodbUri,
     MONGODB_DB_NAME: mongodbDbName,
     JWT_SECRET: jwtSecret,
